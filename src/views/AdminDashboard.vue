@@ -302,8 +302,7 @@ const CAT_H = 80
 const TITLE_H = 100  // 标题占用高度（52px字体 + 20px下边距 + 上下留白）
 
 const pageCount = computed(() => {
-  // 直接用 paginate 的结果，确保与实际分页一致
-  return paginate().length
+  return Math.max(1, paginate().length)
 })
 
 function formatPrice(price) {
