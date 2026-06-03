@@ -1,5 +1,6 @@
 <template>
   <div class="menu-view">
+    <div class="bg-texture"></div>
     <!-- 店铺名称 -->
     <div class="shop-header">
       <h1 class="shop-name">{{ tName(shopName) }}</h1>
@@ -13,11 +14,11 @@
     </div>
 
     <!-- 分类分组导航 -->
-    <div class="category-section" v-for="group in groupedCategories" :key="group.nameZh">
-      <h3 v-if="group.nameZh" class="group-title">{{ tName(group.name) }}</h3>
+    <div class="category-section" v-for="group in sortedGroups" :key="group.id">
+      <h3 class="group-title">{{ tName(group.name) }}</h3>
       <div class="category-tabs">
         <button
-          v-for="cat in group.cats"
+          v-for="cat in catsByGroup(group.id)"
           :key="cat.id"
           class="tab-btn"
           :class="{ active: activeCategory === cat.id }"
@@ -97,7 +98,7 @@
     </div>
 
     <div v-else class="empty-hint">
-      <p>{{ currentCategoryName ? t('noProducts') : t('noMatch') }}</p>
+      <p>{{ activeCategory ? t('noProducts') : t('noMatch') }}</p>
     </div>
 
     <!-- 底部操作区 -->
@@ -198,26 +199,13 @@ const contacts = computed(() => data.value.contacts || { wechat: '', whatsapp: '
 const hasContacts = computed(() => contacts.value.wechat || contacts.value.whatsapp || contacts.value.telegram)
 const categories = computed(() => (data.value.categories || []).sort((a, b) => a.sort - b.sort))
 
-// 按 group 分组
-const groupedCategories = computed(() => {
-  const cats = categories.value
-  const map = new Map()
-  cats.forEach(c => {
-    const groupNameZh = c.group?.zh || ''
-    if (!map.has(groupNameZh)) map.set(groupNameZh, [])
-    map.get(groupNameZh).push(c)
-  })
-  return Array.from(map.entries()).map(([nameZh, cats]) => ({
-    nameZh,
-    name: cats[0]?.group || null,
-    cats
-  }))
+const sortedGroups = computed(() => {
+  return (data.value.groups || []).sort((a, b) => a.sort - b.sort)
 })
 
-const activeCategoryName = computed(() => {
-  const cat = categories.value.find(c => c.id === activeCategory.value)
-  return cat ? tName(cat.name) : ''
-})
+const catsByGroup = (groupId) => {
+  return categories.value.filter(c => c.groupId === groupId).sort((a, b) => a.sort - b.sort)
+}
 
 const filteredProducts = computed(() => {
   let list = (data.value.products || []).filter(p => p.categoryId === activeCategory.value)
@@ -279,8 +267,10 @@ function copyLink() {
 // 初始化默认分类
 function init() {
   const d = getMenuData()
-  if (d?.categories?.length && !activeCategory.value) {
-    activeCategory.value = d.categories.sort((a, b) => a.sort - b.sort)[0].id
+  const groups = (d?.groups || []).sort((a, b) => a.sort - b.sort)
+  if (groups.length) {
+    const cats = (d?.categories || []).filter(c => c.groupId === groups[0].id).sort((a, b) => a.sort - b.sort)
+    if (cats.length) activeCategory.value = cats[0].id
   }
 }
 
@@ -334,10 +324,20 @@ watch(showShare, async (val) => {
 }
 .search-input::placeholder { color: var(--text-secondary); }
 
+/* Background texture overlay */
+.bg-texture {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--bg-texture, none);
+  opacity: 0.15;
+}
+
+/* Group section styling */
+.category-section { margin-bottom: 4px; }
 .group-title {
-  font-size: 14px; color: var(--accent);
-  margin: 16px 16px 0; padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
+  font-size: 16px; color: var(--accent); font-weight: 700;
+  margin: 20px 16px 0; padding: 8px 0 4px;
+  border-bottom: 2px solid var(--accent);
+  letter-spacing: 2px;
 }
 
 .category-tabs {
@@ -356,7 +356,7 @@ watch(showShare, async (val) => {
 
 .product-card {
   background: var(--bg-card); border-radius: 12px; padding: 14px;
-  border: 1px solid var(--border); box-shadow: var(--shadow);
+  border: 1px solid var(--card-border-color, var(--border)); box-shadow: var(--shadow);
   position: relative; overflow: hidden;
 }
 

@@ -130,6 +130,39 @@ export function useMenuData() {
     return save(d)
   }
 
+  // 大类(Group)操作
+  function addGroup(nameObj) {
+    const d = getMenuData()
+    if (!d) return false
+    if (!d.groups) d.groups = []
+    d.groups.push({
+      id: uid(),
+      name: nameObj || { zh: '新分类' },
+      sort: d.groups.length
+    })
+    return save(d)
+  }
+
+  function updateGroup(id, updates) {
+    const d = getMenuData()
+    if (!d) return false
+    const idx = (d.groups || []).findIndex(g => g.id === id)
+    if (idx === -1) return false
+    Object.assign(d.groups[idx], updates)
+    return save(d)
+  }
+
+  function deleteGroup(id) {
+    const d = getMenuData()
+    if (!d) return false
+    d.groups = (d.groups || []).filter(g => g.id !== id)
+    // 同时删除该大类下的分类及其菜品
+    const catIds = (d.categories || []).filter(c => c.groupId === id).map(c => c.id)
+    d.categories = (d.categories || []).filter(c => c.groupId !== id)
+    d.products = (d.products || []).filter(p => !catIds.includes(p.categoryId))
+    return save(d)
+  }
+
   // 数据导入导出
   function exportJSON() {
     const d = getMenuData()
@@ -153,6 +186,7 @@ export function useMenuData() {
       if (current?.currentLang) {
         imported.currentLang = current.currentLang
       }
+      if (!imported.groups) imported.groups = []
       if (!imported.categories) imported.categories = []
       if (!imported.products) imported.products = []
       imported.shopName = imported.shopName || { zh: '店铺名称' }
@@ -175,6 +209,9 @@ export function useMenuData() {
     initDefaultData,
     verifyPassword,
     hashPassword,
+    addGroup,
+    updateGroup,
+    deleteGroup,
     addCategory,
     updateCategory,
     deleteCategory,

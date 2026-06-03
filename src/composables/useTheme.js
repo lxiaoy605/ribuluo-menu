@@ -1,30 +1,32 @@
-import { ref, watchEffect } from 'vue'
+import { ref } from 'vue'
 import { useMenuData } from './useMenuData'
 
 const themes = [
   {
-    id: 'dark-gold',
-    name: { zh: '暗金烧烤', am: 'Ոսկե', en: 'Gold Grill', ru: 'Золотой гриль' },
+    id: 'red-gold',
+    name: { zh: '红金烧烤', am: 'Կարմիր-Ոսկե', en: 'Red & Gold Grill', ru: 'Красно-золотой гриль' },
     css: {
-      '--bg-primary': '#1a1a1a',
-      '--bg-secondary': '#222222',
-      '--bg-card': '#2a2a2a',
-      '--text-primary': '#f0e6d3',
-      '--text-secondary': '#b8a88a',
+      '--bg-primary': '#1a0000',
+      '--bg-secondary': '#2a1010',
+      '--bg-card': '#1f1110',
+      '--text-primary': '#f0e0c0',
+      '--text-secondary': '#b89070',
       '--text-price': '#e8b44a',
-      '--accent': '#c8963e',
-      '--accent-light': '#e8c97a',
-      '--border': '#3a3028',
-      '--tab-bg': '#2a2a2a',
-      '--tab-active': '#c8963e',
-      '--shadow': '0 2px 12px rgba(0,0,0,0.4)',
-      '--badge-rec': '#c8963e',
-      '--badge-sold': '#666',
-      '--overlay': 'rgba(0,0,0,0.85)',
-      '--input-bg': '#333',
-      '--input-border': '#555',
+      '--accent': '#c41e3a',
+      '--accent-light': '#e84040',
+      '--border': '#4a2820',
+      '--tab-bg': '#2a1010',
+      '--tab-active': '#c41e3a',
+      '--shadow': '0 2px 16px rgba(0,0,0,0.5)',
+      '--badge-rec': '#c41e3a',
+      '--badge-sold': '#555',
+      '--overlay': 'rgba(0,0,0,0.9)',
+      '--input-bg': '#2a1010',
+      '--input-border': '#4a2820',
       '--danger': '#c0392b',
-      '--success': '#27ae60'
+      '--success': '#27ae60',
+      '--bg-texture': 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Crect width=\'40\' height=\'40\' fill=\'none\'/%3E%3Cpath d=\'M0 20h40M20 0v40\' stroke=\'%23c41e3a\' stroke-width=\'0.3\' opacity=\'0.06\'/%3E%3Cpath d=\'M0 0l40 40M40 0L0 40\' stroke=\'%23e8b44a\' stroke-width=\'0.2\' opacity=\'0.04\'/%3E%3C/svg%3E")',
+      '--card-border-color': '#8b6914'
     }
   },
   {
@@ -36,7 +38,7 @@ const themes = [
       '--bg-card': '#ffffff',
       '--text-primary': '#3d3226',
       '--text-secondary': '#8b7355',
-      '--text-price': '#c8963e',
+      '--text-price': '#b8860b',
       '--accent': '#b8860b',
       '--accent-light': '#d4a745',
       '--border': '#e0d5c7',
@@ -45,41 +47,18 @@ const themes = [
       '--shadow': '0 2px 16px rgba(0,0,0,0.06)',
       '--badge-rec': '#b8860b',
       '--badge-sold': '#aaa',
-      '--overlay': 'rgba(0,0,0,0.6)',
+      '--overlay': 'rgba(0,0,0,0.5)',
       '--input-bg': '#fff',
       '--input-border': '#d0c5b5',
       '--danger': '#c0392b',
-      '--success': '#27ae60'
-    }
-  },
-  {
-    id: 'chinese-ink',
-    name: { zh: '墨韵中国', am: 'Չինական', en: 'Ink & Brush', ru: 'Китайская тушь' },
-    css: {
-      '--bg-primary': '#f5f0eb',
-      '--bg-secondary': '#ede6dc',
-      '--bg-card': '#faf7f2',
-      '--text-primary': '#2c1810',
-      '--text-secondary': '#8b5e3c',
-      '--text-price': '#c0392b',
-      '--accent': '#8b1a1a',
-      '--accent-light': '#bc3a3a',
-      '--border': '#d4c5b2',
-      '--tab-bg': '#ede6dc',
-      '--tab-active': '#8b1a1a',
-      '--shadow': '0 2px 12px rgba(0,0,0,0.08)',
-      '--badge-rec': '#c0392b',
-      '--badge-sold': '#999',
-      '--overlay': 'rgba(0,0,0,0.7)',
-      '--input-bg': '#fff',
-      '--input-border': '#c4b5a2',
-      '--danger': '#8b1a1a',
-      '--success': '#5a8a4a'
+      '--success': '#27ae60',
+      '--bg-texture': 'none',
+      '--card-border-color': '#e0d5c7'
     }
   }
 ]
 
-const currentTheme = ref('dark-gold')
+const currentTheme = ref('red-gold')
 
 export function useTheme() {
   const { getMenuData, setMenuData } = useMenuData()
@@ -100,7 +79,7 @@ export function useTheme() {
 
   function initTheme() {
     const data = getMenuData()
-    const themeId = data?.theme || 'dark-gold'
+    const themeId = data?.theme || 'red-gold'
     applyTheme(themeId)
   }
 

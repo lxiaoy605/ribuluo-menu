@@ -19,7 +19,7 @@
         {{ t('enter') }}
       </button>
 
-      <p class="login-tip">默认账号 admin / admin123</p>
+
     </div>
   </div>
 </template>
@@ -41,7 +41,7 @@ const errorMsg = ref('')
 async function handleLogin() {
   errorMsg.value = ''
 
-  if (username.value !== 'admin') {
+  if (username.value.trim() !== 'admin') {
     errorMsg.value = '用户名错误'
     return
   }
@@ -74,5 +74,4 @@ async function handleLogin() {
 }
 .login-title { font-size: 22px; text-align: center; margin-bottom: 24px; }
 .error-text { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: center; }
-.login-tip { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 16px; }
 </style>

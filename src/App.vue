@@ -55,25 +55,27 @@ onMounted(() => {
 <style>
 /* ===== CSS 变量由 useTheme.js 注入 ===== */
 :root {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #222222;
-  --bg-card: #2a2a2a;
-  --text-primary: #f0e6d3;
-  --text-secondary: #b8a88a;
+  --bg-primary: #1a0000;
+  --bg-secondary: #2a1010;
+  --bg-card: #1f1110;
+  --text-primary: #f0e0c0;
+  --text-secondary: #b89070;
   --text-price: #e8b44a;
-  --accent: #c8963e;
-  --accent-light: #e8c97a;
-  --border: #3a3028;
-  --tab-bg: #2a2a2a;
-  --tab-active: #c8963e;
-  --shadow: 0 2px 12px rgba(0,0,0,0.4);
-  --badge-rec: #c8963e;
-  --badge-sold: #666;
-  --overlay: rgba(0,0,0,0.85);
-  --input-bg: #333;
-  --input-border: #555;
+  --accent: #c41e3a;
+  --accent-light: #e84040;
+  --border: #4a2820;
+  --tab-bg: #2a1010;
+  --tab-active: #c41e3a;
+  --shadow: 0 2px 16px rgba(0,0,0,0.5);
+  --badge-rec: #c41e3a;
+  --badge-sold: #555;
+  --overlay: rgba(0,0,0,0.9);
+  --input-bg: #2a1010;
+  --input-border: #4a2820;
   --danger: #c0392b;
   --success: #27ae60;
+  --bg-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='none'/%3E%3Cpath d='M0 20h40M20 0v40' stroke='%23c41e3a' stroke-width='0.3' opacity='0.06'/%3E%3Cpath d='M0 0l40 40M40 0L0 40' stroke='%23e8b44a' stroke-width='0.2' opacity='0.04'/%3E%3C/svg%3E");
+  --card-border-color: #8b6914;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

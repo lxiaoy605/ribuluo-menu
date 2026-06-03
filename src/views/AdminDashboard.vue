@@ -12,6 +12,23 @@
       <button class="btn btn-primary btn-sm" @click="saveShopName" style="margin-top:8px">{{ t('save') }}</button>
     </section>
 
+    <!-- 大类管理 -->
+    <section class="admin-section">
+      <div class="section-header">
+        <h3 class="section-title">{{ t('groups') }} ({{ groups.length }})</h3>
+        <button class="btn btn-primary btn-sm" @click="openAddGroup">{{ t('addGroup') }}</button>
+      </div>
+      <div class="list-items">
+        <div v-for="g in sortedGroups" :key="g.id" class="list-item">
+          <span class="list-item-name">{{ tName(g.name) }}</span>
+          <div class="list-item-actions">
+            <button class="btn btn-sm btn-outline" @click="openEditGroup(g)">✏️</button>
+            <button class="btn btn-sm btn-danger" @click="handleDeleteGroup(g)">🗑</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 分类管理 -->
     <section class="admin-section">
       <div class="section-header">
@@ -98,6 +115,27 @@
       </div>
     </section>
 
+    <!-- 编辑大类弹窗 -->
+    <div v-if="showGroupEditor" class="modal-overlay" @click.self="showGroupEditor = false">
+      <div class="modal-content">
+        <h3 class="modal-title">{{ editingGroup?.id ? t('editGroup') : t('addGroup') }}</h3>
+        <div class="lang-inputs">
+          <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
+            <span class="lang-flag">{{ l.flag }}</span>
+            <input v-model="groupForm.name[l.code]" class="form-input" :placeholder="l.label" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">排序</label>
+          <input v-model.number="groupForm.sort" type="number" class="form-input" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="showGroupEditor = false">{{ t('cancel') }}</button>
+          <button class="btn btn-primary" @click="saveGroup">{{ t('save') }}</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 编辑分类弹窗 -->
     <div v-if="showCategoryEditor" class="modal-overlay" @click.self="showCategoryEditor = false">
       <div class="modal-content">
@@ -109,8 +147,11 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">分组（留空为顶级分类）</label>
-          <input v-model="categoryForm.groupZh" class="form-input" placeholder="例如：火锅系列" />
+          <label class="form-label">所属大类</label>
+          <select v-model="categoryForm.groupId" class="form-select">
+            <option value="">-- 无 --</option>
+            <option v-for="g in sortedGroups" :key="g.id" :value="g.id">{{ tName(g.name) }}</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">排序</label>
@@ -190,6 +231,7 @@ const router = useRouter()
 const { t, tName, langOptions } = useI18n()
 const {
   getMenuData, setMenuData,
+  addGroup, updateGroup, deleteGroup,
   addCategory, updateCategory, deleteCategory,
   addProduct, updateProduct, deleteProduct,
   exportJSON, importJSON
@@ -199,14 +241,17 @@ const authed = ref(false)
 const data = ref(null)
 const contacts = reactive({ wechat: '', whatsapp: '', telegram: '' })
 const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
+const showGroupEditor = ref(false)
 const showCategoryEditor = ref(false)
 const showProductEditor = ref(false)
+const editingGroup = ref(null)
 const editingCategory = ref(null)
 const editingProduct = ref(null)
 const fileInput = ref(null)
 const shopNameEdit = reactive({ zh: '', am: '', en: '', ru: '' })
 
-const categoryForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, groupZh: '', sort: 0 })
+const groupForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, sort: 0 })
+const categoryForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, groupId: '', sort: 0 })
 const productForm = reactive({
   name: { zh: '', am: '', en: '', ru: '' },
   price: 0, categoryId: '', image: '', imagePosition: 'top',
@@ -215,6 +260,8 @@ const productForm = reactive({
 
 const products = computed(() => data.value?.products || [])
 const categories = computed(() => (data.value?.categories || []).sort((a, b) => a.sort - b.sort))
+const groups = computed(() => data.value?.groups || [])
+const sortedGroups = computed(() => groups.value.sort((a, b) => a.sort - b.sort))
 
 function productsByCat(catId) {
   return products.value.filter(p => p.categoryId === catId)
@@ -222,10 +269,29 @@ function productsByCat(catId) {
 
 function refreshData() {
   data.value = getMenuData()
-  if (data.value?.shopName) {
+  if (!data.value) return
+  // 迁移：旧数据没有 groups 数组和分类的 groupId
+  let migrated = false
+  if (!data.value.groups) {
+    data.value.groups = []
+    migrated = true
+  }
+  // 对没有 groupId 的分类，创建默认大类并分配
+  const unassigned = (data.value.categories || []).filter(c => !c.groupId)
+  if (unassigned.length > 0) {
+    let defaultGroup = data.value.groups.find(g => g.id === '__default__')
+    if (!defaultGroup) {
+      defaultGroup = { id: '__default__', name: { zh: '默认分类', am: 'Default', en: 'Default', ru: 'По умолчанию' }, sort: 0 }
+      data.value.groups.unshift(defaultGroup)
+    }
+    unassigned.forEach(c => { c.groupId = '__default__' })
+    migrated = true
+  }
+  if (migrated) setMenuData(data.value)
+  if (data.value.shopName) {
     Object.assign(shopNameEdit, data.value.shopName)
   }
-  if (data.value?.contacts) {
+  if (data.value.contacts) {
     Object.assign(contacts, data.value.contacts)
   }
 }
@@ -269,30 +335,58 @@ function formatPrice(price) {
   return '֏ ' + price.toLocaleString()
 }
 
+// 大类操作
+function openAddGroup() {
+  editingGroup.value = null
+  groupForm.name = { zh: '', am: '', en: '', ru: '' }
+  groupForm.sort = (data.value?.groups?.length || 0)
+  showGroupEditor.value = true
+}
+function openEditGroup(g) {
+  editingGroup.value = g
+  groupForm.name = { ...g.name }
+  groupForm.sort = g.sort
+  showGroupEditor.value = true
+}
+function saveGroup() {
+  const nameObj = { ...groupForm.name }
+  if (editingGroup.value?.id) {
+    updateGroup(editingGroup.value.id, { name: nameObj, sort: groupForm.sort })
+  } else {
+    addGroup(nameObj)
+  }
+  showGroupEditor.value = false
+  refreshData()
+}
+function handleDeleteGroup(g) {
+  if (!confirm(t('deleteConfirm'))) return
+  deleteGroup(g.id)
+  refreshData()
+}
+
 // 分类操作
 function openAddCategory() {
   editingCategory.value = null
   categoryForm.name = { zh: '', am: '', en: '', ru: '' }
-  categoryForm.groupZh = ''
+  categoryForm.groupId = ''
   categoryForm.sort = (data.value?.categories?.length || 0)
   showCategoryEditor.value = true
 }
 function openEditCategory(cat) {
   editingCategory.value = cat
   categoryForm.name = { ...cat.name }
-  categoryForm.groupZh = cat.group?.zh || ''
+  categoryForm.groupId = cat.groupId || ''
   categoryForm.sort = cat.sort
   showCategoryEditor.value = true
 }
 function saveCategory() {
   const nameObj = { ...categoryForm.name }
-  const group = categoryForm.groupZh ? { zh: categoryForm.groupZh } : null
   if (editingCategory.value?.id) {
-    updateCategory(editingCategory.value.id, { name: nameObj, group, sort: categoryForm.sort })
+    updateCategory(editingCategory.value.id, { name: nameObj, groupId: categoryForm.groupId || undefined, sort: categoryForm.sort })
   } else {
     const d = getMenuData()
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
-    d.categories.push({ id, name: nameObj, group, sort: categoryForm.sort })
+    d.categories.push({ id, name: nameObj, groupId: categoryForm.groupId || undefined, sort: categoryForm.sort })
     setMenuData(d)
   }
   showCategoryEditor.value = false
