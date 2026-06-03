@@ -1,15 +1,10 @@
 <template>
   <div class="admin-page" v-if="authed">
-    <!-- 店铺名称 -->
+    <!-- 店铺名称 Modal 按钮触发 -->
     <section class="admin-section">
       <h3 class="section-title">{{ t('shopName') }}</h3>
-      <div class="lang-inputs">
-        <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
-          <span class="lang-flag">{{ l.flag }}</span>
-          <input v-model="shopNameEdit[l.code]" class="form-input" :placeholder="l.label" />
-        </div>
-      </div>
-      <button class="btn btn-primary btn-sm" @click="saveShopName" style="margin-top:8px">{{ t('save') }}</button>
+      <p class="shop-name-display">{{ tName(shopNameEdit) }}</p>
+      <button class="btn btn-outline btn-sm" @click="showShopNameEditor = true">✏️ {{ t('editShopName') }}</button>
     </section>
 
     <!-- 一级分类管理 -->
@@ -73,6 +68,15 @@
       </div>
     </section>
 
+    <!-- 分享与导出 -->
+    <section class="admin-section">
+      <h3 class="section-title">📤 {{ t('share') }} & {{ t('export') }}</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" @click="showShare = true">📱 {{ t('share') }}</button>
+        <button class="btn btn-outline" @click="showExportOptions = true">📸 {{ t('export') }}</button>
+      </div>
+    </section>
+
     <!-- 数据备份 -->
     <section class="admin-section">
       <h3 class="section-title">{{ t('dataBackup') }}</h3>
@@ -82,6 +86,25 @@
         <input ref="fileInput" type="file" accept=".json" style="display:none" @change="handleImportData" />
       </div>
     </section>
+
+    <!-- ============== Modals ============== -->
+
+    <!-- 店名编辑弹窗 -->
+    <div v-if="showShopNameEditor" class="modal-overlay" @click.self="showShopNameEditor = false">
+      <div class="modal-content">
+        <h3 class="modal-title">{{ t('editShopName') }}</h3>
+        <div class="lang-inputs">
+          <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
+            <span class="lang-flag">{{ l.flag }}</span>
+            <input v-model="shopNameEdit[l.code]" class="form-input" :placeholder="l.label" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="showShopNameEditor = false">{{ t('cancel') }}</button>
+          <button class="btn btn-primary" @click="saveShopName">{{ t('save') }}</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 一级分类弹窗 -->
     <div v-if="showCategoryEditor" class="modal-overlay" @click.self="showCategoryEditor = false">
@@ -141,7 +164,8 @@
         </div>
         <div class="form-group">
           <label class="form-label">{{ t('image') }}</label>
-          <input type="file" accept="image/*" @change="onImageUpload" class="form-input" />
+          <input type="file" accept="image/*" @change="onImageUpload" class="form-input" :disabled="uploading" />
+          <p v-if="uploading" style="color:var(--accent);font-size:12px;margin-top:4px">⏳ 上传中...</p>
           <div v-if="itemForm.image" style="margin-top:8px">
             <img :src="itemForm.image" style="max-width:150px;border-radius:8px" />
             <button class="btn btn-sm btn-danger" style="margin-left:8px" @click="itemForm.image = ''">移除</button>
@@ -149,14 +173,15 @@
         </div>
         <div class="form-group">
           <label class="form-label">{{ t('imagePosition') }}</label>
-          <select v-model="itemForm.imagePosition" class="form-select">
-            <option value="top">⬆ 顶部</option>
-            <option value="bottom">⬇ 底部</option>
-            <option value="left">⬅ 左侧</option>
-            <option value="right">➡ 右侧</option>
-            <option value="background">🖼 背景图</option>
-            <option value="none">🚫 不显示</option>
-          </select>
+          <div class="custom-select">
+            <button
+              v-for="opt in imagePosOptions"
+              :key="opt.value"
+              class="select-option"
+              :class="{ active: itemForm.imagePosition === opt.value }"
+              @click="itemForm.imagePosition = opt.value"
+            >{{ opt.label }}</button>
+          </div>
         </div>
         <div class="form-group" style="display:flex;gap:16px">
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
@@ -172,17 +197,64 @@
         </div>
       </div>
     </div>
+
+    <!-- 导出选项弹窗 -->
+    <div v-if="showExportOptions" class="modal-overlay" @click.self="showExportOptions = false">
+      <div class="modal-content">
+        <h3 class="modal-title">{{ t('exportImage') }}</h3>
+        <div class="form-group">
+          <label class="form-label">{{ t('resolution') }}</label>
+          <div class="resolution-presets">
+            <button v-for="(r, idx) in resolutions" :key="r.label" class="btn btn-sm"
+              :class="{ 'btn-primary': selectedResIdx === idx, 'btn-outline': selectedResIdx !== idx }"
+              @click="selectedResIdx = idx">{{ r.label }} ({{ r.w }}×{{ r.h }})</button>
+          </div>
+        </div>
+        <div v-if="resolutions[selectedResIdx].custom" class="form-group">
+          <label class="form-label">宽 × 高 (px)</label>
+          <div style="display:flex;gap:8px">
+            <input v-model.number="customW" type="number" class="form-input" placeholder="宽度" />
+            <input v-model.number="customH" type="number" class="form-input" placeholder="高度" />
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+          共 {{ pageCount }} 页，将导出 {{ pageCount }} 张图片
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" @click="doExport" :disabled="exporting">
+            {{ exporting ? '生成中...' : t('download') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div v-if="showShare" class="modal-overlay" @click.self="showShare = false">
+      <div class="modal-content">
+        <h3 class="modal-title">{{ t('share') }}</h3>
+        <div class="share-qrcode" ref="qrContainer"></div>
+        <p style="text-align:center;color:var(--text-secondary);margin:12px 0">{{ t('scanQR') }}</p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="copyLink">{{ t('copyLink') }}</button>
+          <button class="btn btn-primary" @click="showShare = false">{{ t('cancel') }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useMenuData } from '../composables/useMenuData'
+import { useTheme } from '../composables/useTheme'
+import { useCloudinary } from '../composables/useCloudinary'
 
 const router = useRouter()
 const { t, tName, langOptions } = useI18n()
+const { currentTheme, getTheme } = useTheme()
+const { uploadImage } = useCloudinary()
 const {
   getMenuData, setMenuData,
   addCategory, updateCategory, deleteCategory,
@@ -198,6 +270,7 @@ const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
 const showCategoryEditor = ref(false)
 const showSubEditor = ref(false)
 const showItemEditor = ref(false)
+const showShopNameEditor = ref(false)
 const editingCategory = ref(null)
 const editingSub = ref(null)
 const editingItem = ref(null)
@@ -214,6 +287,32 @@ const itemForm = reactive({
   price: 0, image: '', imagePosition: 'top', recommended: false, soldOut: false
 })
 
+// 分享与导出
+const showShare = ref(false)
+const showExportOptions = ref(false)
+const exporting = ref(false)
+const qrContainer = ref(null)
+const selectedResIdx = ref(0)
+const customW = ref(1080)
+const customH = ref(1920)
+const uploading = ref(false)
+
+const resolutions = [
+  { label: '手机版', w: 1080, h: 1920 },
+  { label: '海报版', w: 1456, h: 2048 },
+  { label: '高清版', w: 3174, h: 4490 },
+  { label: '自定义', w: 0, h: 0, custom: true }
+]
+
+const imagePosOptions = [
+  { value: 'top', label: '⬆ 顶部' },
+  { value: 'bottom', label: '⬇ 底部' },
+  { value: 'left', label: '⬅ 左侧' },
+  { value: 'right', label: '➡ 右侧' },
+  { value: 'background', label: '🖼 背景图' },
+  { value: 'none', label: '🚫 不显示' }
+]
+
 const qrList = [
   { key: 'wechat', icon: '💬', label: '微信' },
   { key: 'whatsapp', icon: '📱', label: 'WhatsApp' },
@@ -222,6 +321,30 @@ const qrList = [
 
 const categories = computed(() => data.value?.categories || [])
 const sortedCategories = computed(() => categories.value.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0)))
+
+const PAGE_H = 2048
+const PAGE_W = 1456
+const PAGE_PAD = 80
+const ROW_H = 58
+const SUB_H = 70
+const CAT_H = 80
+
+const pageCount = computed(() => {
+  let pages = 0
+  const bgH = PAGE_H - PAGE_PAD * 2
+  let curH = 0
+  for (const cat of sortedCategories.value) {
+    for (const sub of (cat.children || [])) {
+      const itemCount = (sub.items || []).length
+      const rows = Math.ceil(itemCount / 2)
+      const needH = CAT_H + SUB_H + rows * ROW_H
+      if (curH + needH > bgH && curH > 0) { pages++; curH = 0 }
+      curH += needH
+    }
+  }
+  if (curH > 0) pages++
+  return Math.max(pages, 1)
+})
 
 function formatPrice(price) {
   if (price === 0) return '时价'
@@ -235,6 +358,13 @@ function refreshData() {
   if (data.value.contacts) Object.assign(contacts, data.value.contacts)
 }
 
+// 店名
+function saveShopName() {
+  const d = getMenuData()
+  if (d) { d.shopName = { ...shopNameEdit }; setMenuData(d); refreshData() }
+  showShopNameEditor.value = false
+}
+
 // 联系方式
 function saveContacts() {
   const d = getMenuData()
@@ -245,15 +375,16 @@ function onQrUpload(e, type) {
   const file = e.target.files?.[0]
   if (!file) return
   if (!file.type.startsWith('image/')) { alert('请上传图片文件'); return }
-  if (file.size > 1 * 1024 * 1024) { alert('图片不能超过1MB'); return }
-  const reader = new FileReader()
-  reader.onload = (ev) => { contacts[type] = ev.target.result; saveContacts() }
-  reader.readAsDataURL(file)
-}
-
-function saveShopName() {
-  const d = getMenuData()
-  if (d) { d.shopName = { ...shopNameEdit }; setMenuData(d); refreshData() }
+  if (file.size > 5 * 1024 * 1024) { alert('图片不能超过5MB'); return }
+  uploading.value = true
+  uploadImage(file).then(result => {
+    contacts[type] = result.url
+    saveContacts()
+    uploading.value = false
+  }).catch(err => {
+    alert('上传失败: ' + err.message)
+    uploading.value = false
+  })
 }
 
 // ========== 一级分类 ==========
@@ -365,10 +496,15 @@ function onImageUpload(e) {
   const file = e.target.files?.[0]
   if (!file) return
   if (!file.type.startsWith('image/')) { alert('请上传图片文件'); return }
-  if (file.size > 2 * 1024 * 1024) { alert('图片不能超过2MB'); return }
-  const reader = new FileReader()
-  reader.onload = (ev) => { itemForm.image = ev.target.result }
-  reader.readAsDataURL(file)
+  if (file.size > 5 * 1024 * 1024) { alert('图片不能超过5MB'); return }
+  uploading.value = true
+  uploadImage(file).then(result => {
+    itemForm.image = result.url
+    uploading.value = false
+  }).catch(err => {
+    alert('上传失败: ' + err.message)
+    uploading.value = false
+  })
 }
 
 // 数据导入导出
@@ -395,6 +531,172 @@ function handleImportData(e) {
   e.target.value = ''
 }
 
+// ========== 海报导出 ==========
+function buildPage(pageIdx, pageData) {
+  const theme = getTheme()
+  const page = document.createElement('div')
+  page.style.cssText = `width:${PAGE_W}px;height:${PAGE_H}px;position:relative;overflow:hidden;font-family:${theme.fonts.body}`
+
+  const bg = document.createElement('img')
+  bg.src = theme.bgImage
+  bg.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover`
+  page.appendChild(bg)
+
+  const content = document.createElement('div')
+  content.style.cssText = `position:relative;z-index:1;padding:${PAGE_PAD}px;height:100%;display:flex;flex-direction:column`
+  page.appendChild(content)
+
+  const title = document.createElement('div')
+  title.style.cssText = `text-align:center;font-size:52px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};margin-bottom:8px`
+  title.textContent = tName(data.value?.shopName)
+  content.appendChild(title)
+
+  const hr = document.createElement('div')
+  hr.style.cssText = `border-bottom:2px solid ${theme.css['--border']};margin-bottom:20px`
+  content.appendChild(hr)
+
+  const inner = document.createElement('div')
+  inner.style.cssText = 'flex:1;overflow:hidden'
+
+  for (let di = 0; di < pageData.length; di++) {
+    const { cat, sub, items } = pageData[di]
+
+    const catEl = document.createElement('div')
+    catEl.style.cssText = `text-align:center;font-size:36px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};padding:8px 0;margin-top:${di > 0 ? '20px' : '0'}`
+    catEl.innerHTML = `━━━━━━ &nbsp;${tName(cat.name)}&nbsp; ━━━━━━`
+    inner.appendChild(catEl)
+
+    const subEl = document.createElement('div')
+    subEl.style.cssText = `text-align:center;font-size:28px;color:${theme.css['--text-primary']};padding:6px 12px;margin:6px auto;background:${theme.css['--tab-bg']};border:1px solid ${theme.css['--accent']};display:inline-block;width:auto`
+    subEl.textContent = tName(sub.name)
+    const subWrap = document.createElement('div')
+    subWrap.style.cssText = 'text-align:center'
+    subWrap.appendChild(subEl)
+    inner.appendChild(subWrap)
+
+    const cols = [[], []]
+    items.forEach((item, i) => cols[i % 2].push(item))
+
+    const grid = document.createElement('div')
+    grid.style.cssText = 'display:flex;gap:40px;margin-top:8px'
+    cols.forEach(col => {
+      const colDiv = document.createElement('div')
+      colDiv.style.cssText = 'flex:1'
+      col.forEach(item => {
+        const row = document.createElement('div')
+        row.style.cssText = `display:flex;align-items:baseline;padding:4px 0;border-bottom:1px dotted ${theme.css['--border']}`
+        const nameSpan = document.createElement('span')
+        nameSpan.style.cssText = `flex:1;font-size:22px;color:${theme.css['--text-primary']}`
+        nameSpan.textContent = (item.recommended ? '⭐' : '') + tName(item.name)
+        const dotsSpan = document.createElement('span')
+        dotsSpan.style.cssText = `flex:1;border-bottom:1px dotted ${theme.css['--border']};margin:0 4px`
+        const priceSpan = document.createElement('span')
+        priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap`
+        priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
+        row.appendChild(nameSpan)
+        row.appendChild(dotsSpan)
+        row.appendChild(priceSpan)
+        colDiv.appendChild(row)
+      })
+      grid.appendChild(colDiv)
+    })
+    inner.appendChild(grid)
+  }
+
+  content.appendChild(inner)
+  return page
+}
+
+function paginate() {
+  const pages = []
+  let curPage = []
+  const bgH = PAGE_H - PAGE_PAD * 2
+  let curH = 0
+
+  for (const cat of sortedCategories.value) {
+    for (const sub of (cat.children || [])) {
+      const items = sub.items || []
+      if (!items.length) continue
+      const rows = Math.ceil(items.length / 2)
+      const needH = CAT_H + SUB_H + rows * ROW_H
+
+      if (curH + needH > bgH && curPage.length > 0) {
+        pages.push(curPage)
+        curPage = []
+        curH = 0
+      }
+      curPage.push({ cat, sub, items })
+      curH += needH
+    }
+  }
+  if (curPage.length) pages.push(curPage)
+  return pages
+}
+
+async function doExport() {
+  exporting.value = true
+  showExportOptions.value = false
+  await nextTick()
+  try {
+    const pages = paginate()
+    if (!pages.length) { exporting.value = false; return }
+    await exportPNGs(pages)
+  } catch (e) {
+    console.error('导出失败', e)
+  }
+  exporting.value = false
+}
+
+async function exportPNGs(pages) {
+  const { default: html2canvas } = await import('html2canvas')
+  for (let i = 0; i < pages.length; i++) {
+    const pageEl = buildPage(i, pages[i])
+    document.body.appendChild(pageEl)
+    await nextTick()
+    const res = resolutions[selectedResIdx.value]
+    const w = res?.custom ? (customW.value || 1456) : (res?.w || 1456)
+    const h = res?.custom ? (customH.value || 2048) : (res?.h || 2048)
+    const scale = Math.max(w / PAGE_W, h / PAGE_H)
+    const canvas = await html2canvas(pageEl, { scale, useCORS: true, allowTaint: true, backgroundColor: null })
+    document.body.removeChild(pageEl)
+    const link = document.createElement('a')
+    link.download = '菜单_' + tName(data.value?.shopName || { zh: '菜单' }) + '_p' + (i + 1) + '.png'
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+    if (i < pages.length - 1) await new Promise(r => setTimeout(r, 200))
+  }
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href.split('#')[0]).then(() => {
+    alert('链接已复制！')
+  }).catch(() => {
+    prompt('请手动复制链接', window.location.href.split('#')[0])
+  })
+}
+
+// 分享二维码
+watch(showShare, async (val) => {
+  if (val && qrContainer.value) {
+    await nextTick()
+    try {
+      const QRCode = (await import('qrcode')).default
+      const url = window.location.href.split('#')[0]
+      const canvas = document.createElement('canvas')
+      await QRCode.toCanvas(canvas, url, { width: 200, margin: 2 })
+      qrContainer.value.innerHTML = ''
+      qrContainer.value.appendChild(canvas)
+    } catch (e) {
+      console.error('二维码生成失败', e)
+    }
+  }
+})
+
+// 监听来自 App.vue 的打开店名编辑器事件
+function onOpenShopNameEditor() {
+  showShopNameEditor.value = true
+}
+
 onMounted(() => {
   const loggedIn = sessionStorage.getItem('ribuluo_admin_auth')
   if (!loggedIn) {
@@ -403,11 +705,16 @@ onMounted(() => {
   }
   authed.value = true
   refreshData()
+  window.addEventListener('open-shop-name-editor', onOpenShopNameEditor)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('open-shop-name-editor', onOpenShopNameEditor)
 })
 </script>
 
 <style scoped>
-.admin-page { padding: 16px; }
+.admin-page { padding: 16px; padding-bottom: 40px; }
 .admin-section {
   background: var(--bg-card); border-radius: 12px;
   padding: 16px; margin-bottom: 16px;
@@ -415,6 +722,13 @@ onMounted(() => {
 }
 .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+.shop-name-display {
+  font-family: var(--title-font);
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
 
 .lang-inputs { display: flex; flex-direction: column; gap: 8px; }
 .lang-input-row { display: flex; align-items: center; gap: 8px; }
@@ -452,6 +766,24 @@ onMounted(() => {
 .badge-rec { background: var(--badge-rec); color: #fff; }
 .badge-sold { background: var(--badge-sold); color: #fff; }
 
+/* 自定义选择组件 */
+.custom-select {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.select-option {
+  padding: 6px 12px; font-size: 12px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--tab-bg);
+  color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s;
+  font-family: var(--body-font);
+}
+.select-option.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .qr-uploads { display: flex; flex-direction: column; gap: 12px; }
 .qr-upload-item {
   display: flex; align-items: center; gap: 12px;
@@ -465,4 +797,9 @@ onMounted(() => {
   border: 2px dashed var(--input-border); border-radius: 6px;
   font-size: 12px; color: var(--text-secondary); cursor: pointer;
 }
+
+/* 弹窗 */
+.share-qrcode { display: flex; justify-content: center; padding: 12px; }
+.share-qrcode canvas { border-radius: 8px; }
+.resolution-presets { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>

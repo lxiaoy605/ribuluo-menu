@@ -32,15 +32,20 @@ function initDefaultData(defaultData) {
     setMenuData(defaultData)
     return defaultData
   }
-  // 迁移：检测旧格式（有 groups 或有 products 顶层数组）
+  // 迁移：检测旧格式（无 categories 或 categories[0] 无 children，或有旧 groups/products 字段）
   let migrated = false
-  if (!existing.categories || existing.groups || existing.products) {
+  const isOldFormat = existing.groups || existing.products ||
+    (!existing.categories || (existing.categories.length > 0 && !existing.categories[0].children))
+  if (isOldFormat) {
     if (defaultData.categories && defaultData.categories.length > 0) {
       existing.categories = JSON.parse(JSON.stringify(defaultData.categories))
       existing.theme = 'bbq-red-gold'
       migrated = true
     }
   }
+  // 清理旧格式残留字段，防止重复触发迁移
+  if (existing.groups) { delete existing.groups; migrated = true }
+  if (existing.products) { delete existing.products; migrated = true }
   if (!existing.contacts) {
     existing.contacts = { wechat: '', whatsapp: '', telegram: '' }
     migrated = true

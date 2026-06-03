@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.107.0",
     "html2canvas": "^1.4.1",
     "qrcode": "^1.5.4",
     "vue": "^3.4.0",

@@ -60,7 +60,11 @@ const uiTexts = {
     firstTimeSetup: '首次使用，请设置管理密码',
     menuEmpty: '菜单正在准备中，请稍后再来 🍖',
     noProducts: '该分类暂无菜品',
-    noMatch: '没有找到匹配的菜品'
+    noMatch: '没有找到匹配的菜品',
+    editShopName: '编辑店名',
+    themeSwitchTitle: '切换主题',
+    themeSwitchConfirm: '切换主题将影响菜单页面的展示效果，确认切换吗？',
+    confirm: '确认'
   },
   am: {
     search: 'Որոնել',
@@ -113,7 +117,11 @@ const uiTexts = {
     firstTimeSetup: 'Առաջին անգամ, ստեղծեք գաղտնաբառ',
     menuEmpty: 'Ճաշացանկը պատրաստվում է 🍖',
     noProducts: 'Այս կատեգորիայում ուտեստներ չկան',
-    noMatch: 'Ոչինչ չի գտնվել'
+    noMatch: 'Ոչինչ չի գտնվել',
+    editShopName: 'Խմբագրել անունը',
+    themeSwitchTitle: 'Փոխել թեման',
+    themeSwitchConfirm: 'Թեմայի փոփոխությունը կազդի ճաշացանկի տեսքի վրա։ Հաստատե՞լ։',
+    confirm: 'Հաստատել'
   },
   en: {
     search: 'Search',
@@ -166,7 +174,11 @@ const uiTexts = {
     firstTimeSetup: 'First time setup, please set a password',
     menuEmpty: 'Menu is being prepared, check back soon 🍖',
     noProducts: 'No dishes in this category',
-    noMatch: 'No matching dishes found'
+    noMatch: 'No matching dishes found',
+    editShopName: 'Edit Shop Name',
+    themeSwitchTitle: 'Switch Theme',
+    themeSwitchConfirm: 'Changing the theme will affect the menu page appearance. Confirm?',
+    confirm: 'Confirm'
   },
   ru: {
     search: 'Поиск',
@@ -219,7 +231,11 @@ const uiTexts = {
     firstTimeSetup: 'Первый вход, установите пароль',
     menuEmpty: 'Меню готовится, заходите позже 🍖',
     noProducts: 'В этой категории нет блюд',
-    noMatch: 'Ничего не найдено'
+    noMatch: 'Ничего не найдено',
+    editShopName: 'Редактировать название',
+    themeSwitchTitle: 'Сменить тему',
+    themeSwitchConfirm: 'Смена темы повлияет на отображение меню. Подтвердить?',
+    confirm: 'Подтвердить'
   }
 }
 

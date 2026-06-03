@@ -150,11 +150,11 @@ export function useTheme() {
       loadFont(theme.fonts.body)
     }
 
-    // 设置页面背景
-    document.body.style.backgroundImage = `url('${theme.bgImage}')`
-    document.body.style.backgroundSize = 'cover'
-    document.body.style.backgroundAttachment = 'fixed'
-    document.body.style.backgroundPosition = 'center'
+    // 页面背景使用纯色（背景图仅用于海报导出）
+    document.body.style.backgroundImage = 'none'
+    document.body.style.backgroundSize = ''
+    document.body.style.backgroundAttachment = ''
+    document.body.style.backgroundPosition = ''
 
     const data = getMenuData()
     if (data) {

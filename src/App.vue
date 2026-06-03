@@ -1,29 +1,48 @@
 <template>
   <div class="app" :class="'theme-' + currentTheme">
-    <div class="app-header">
+    <!-- 登录页不显示顶栏 -->
+    <div class="app-header" v-if="!isLogin">
       <div class="header-left">
         <span class="brand-icon">🔥</span>
-        <span class="brand-text" v-if="isAdmin">管理后台</span>
+        <span v-if="!isAdmin" class="brand-text">{{ tName(shopNameComputed) }}</span>
       </div>
       <div class="header-right">
-        <select class="lang-switch" v-model="currentLang" @change="onLangChange">
-          <option v-for="l in langOptions" :key="l.code" :value="l.code">{{ l.flag }} {{ l.label }}</option>
-        </select>
-        <select v-if="isAdmin" class="theme-switch" v-model="currentTheme" @change="onThemeChange">
-          <option v-for="th in themeOptions" :key="th.id" :value="th.id">{{ tName(th.name) }}</option>
-        </select>
-        <router-link v-if="!isAdmin" to="/admin" class="btn-admin-link">{{ t('edit') }}</router-link>
-        <router-link v-if="isAdmin" to="/" class="btn-admin-link">{{ t('back') }}</router-link>
+        <!-- 客户页面：语言切换 -->
+        <template v-if="!isAdmin">
+          <select class="lang-switch" v-model="currentLang" @change="onLangChange">
+            <option v-for="l in langOptions" :key="l.code" :value="l.code">{{ l.flag }} {{ l.label }}</option>
+          </select>
+        </template>
+        <!-- 管理页面：主题切换 + 编辑店名 -->
+        <template v-if="isAdmin">
+          <select class="theme-switch" v-model="currentTheme" @change="onThemeChangeAttempt">
+            <option v-for="th in themeOptions" :key="th.id" :value="th.id">{{ tName(th.name) }}</option>
+          </select>
+          <button class="btn-admin-link" @click="$emit('editShopName')">✏️ {{ t('editShopName') }}</button>
+        </template>
       </div>
     </div>
+
+    <!-- 主题切换确认弹窗 -->
+    <div v-if="showThemeConfirm" class="modal-overlay" @click.self="showThemeConfirm = false">
+      <div class="modal-content">
+        <h3 class="modal-title">{{ t('themeSwitchTitle') }}</h3>
+        <p style="color:var(--text-secondary);margin-bottom:16px">{{ t('themeSwitchConfirm') }}</p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="cancelThemeChange">{{ t('cancel') }}</button>
+          <button class="btn btn-primary" @click="confirmThemeChange">{{ t('confirm') }}</button>
+        </div>
+      </div>
+    </div>
+
     <main class="app-main">
-      <router-view />
+      <router-view @edit-shop-name="onEditShopName" />
     </main>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from './composables/useI18n'
 import { useTheme } from './composables/useTheme'
@@ -33,16 +52,44 @@ import { defaultMenu } from './data/defaultMenu'
 const route = useRoute()
 const { t, tName, currentLang, setLang, initLang, langOptions } = useI18n()
 const { currentTheme, applyTheme, initTheme, themeOptions } = useTheme()
-const { initDefaultData } = useMenuData()
+const { getMenuData, initDefaultData } = useMenuData()
 
+const isLogin = computed(() => route.path === '/admin' || route.path === '/admin/')
 const isAdmin = computed(() => route.path.startsWith('/admin'))
+
+const showThemeConfirm = ref(false)
+const pendingTheme = ref('')
+
+const shopNameComputed = computed(() => {
+  const d = getMenuData()
+  return d?.shopName || { zh: '菜单' }
+})
 
 function onLangChange() {
   setLang(currentLang.value)
 }
 
-function onThemeChange() {
-  applyTheme(currentTheme.value)
+function onThemeChangeAttempt() {
+  pendingTheme.value = currentTheme.value
+  // 先切回去，等确认后再切
+  const d = getMenuData()
+  const curId = d?.theme || 'bbq-red-gold'
+  currentTheme.value = curId
+  showThemeConfirm.value = true
+}
+
+function confirmThemeChange() {
+  applyTheme(pendingTheme.value)
+  showThemeConfirm.value = false
+}
+
+function cancelThemeChange() {
+  showThemeConfirm.value = false
+}
+
+function onEditShopName() {
+  // 通过事件触发 AdminDashboard 中的店名编辑弹窗
+  window.dispatchEvent(new CustomEvent('open-shop-name-editor'))
 }
 
 onMounted(() => {
@@ -85,9 +132,6 @@ onMounted(() => {
 body {
   font-family: var(--body-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
   background: var(--bg-primary);
-  background-size: cover;
-  background-attachment: fixed;
-  background-position: center;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
@@ -98,6 +142,8 @@ body {
   margin: 0 auto;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
@@ -127,6 +173,7 @@ body {
   background: var(--input-bg);
   color: var(--text-primary);
   cursor: pointer;
+  font-family: var(--body-font);
 }
 
 .btn-admin-link {
@@ -137,16 +184,19 @@ body {
   border: 1px solid var(--accent);
   border-radius: 6px;
   white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  font-family: var(--body-font);
 }
 .btn-admin-link:hover { background: var(--accent); color: #fff; }
 
-.app-main { padding-bottom: 80px; }
+.app-main { flex: 1; display: flex; flex-direction: column; }
 
 /* 通用按钮 */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   padding: 8px 16px; border: none; border-radius: 8px; font-size: 14px;
-  cursor: pointer; transition: all 0.2s;
+  cursor: pointer; transition: all 0.2s; font-family: var(--body-font);
 }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent-light); }
@@ -163,6 +213,7 @@ body {
   border-radius: 8px; border: 1px solid var(--input-border);
   background: var(--input-bg); color: var(--text-primary);
   outline: none; transition: border-color 0.2s;
+  font-family: var(--body-font);
 }
 .form-input:focus, .form-select:focus { border-color: var(--accent); }
 
