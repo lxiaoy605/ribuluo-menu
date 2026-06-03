@@ -1,6 +1,6 @@
 <template>
   <div class="admin-page" v-if="authed">
-    <!-- 店铺名称编辑 -->
+    <!-- 店铺名称 -->
     <section class="admin-section">
       <h3 class="section-title">{{ t('shopName') }}</h3>
       <div class="lang-inputs">
@@ -12,61 +12,47 @@
       <button class="btn btn-primary btn-sm" @click="saveShopName" style="margin-top:8px">{{ t('save') }}</button>
     </section>
 
-    <!-- 大类管理 -->
+    <!-- 一级分类管理 -->
     <section class="admin-section">
       <div class="section-header">
-        <h3 class="section-title">{{ t('groups') }} ({{ groups.length }})</h3>
-        <button class="btn btn-primary btn-sm" @click="openAddGroup">{{ t('addGroup') }}</button>
-      </div>
-      <div class="list-items">
-        <div v-for="g in sortedGroups" :key="g.id" class="list-item">
-          <span class="list-item-name">{{ tName(g.name) }}</span>
-          <div class="list-item-actions">
-            <button class="btn btn-sm btn-outline" @click="openEditGroup(g)">✏️</button>
-            <button class="btn btn-sm btn-danger" @click="handleDeleteGroup(g)">🗑</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 分类管理 -->
-    <section class="admin-section">
-      <div class="section-header">
-        <h3 class="section-title">{{ t('categories') }} ({{ categories.length }})</h3>
+        <h3 class="section-title">一级分类 ({{ categories.length }})</h3>
         <button class="btn btn-primary btn-sm" @click="openAddCategory">{{ t('addCategory') }}</button>
       </div>
-      <div class="list-items">
-        <div v-for="cat in categories" :key="cat.id" class="list-item">
-          <span class="list-item-name">{{ tName(cat.name) }}</span>
-          <div class="list-item-actions">
+      <div v-for="cat in sortedCategories" :key="cat.id" class="cat-block">
+        <div class="cat-header">
+          <span class="cat-name">{{ tName(cat.name) }}</span>
+          <div class="cat-actions">
             <button class="btn btn-sm btn-outline" @click="openEditCategory(cat)">✏️</button>
             <button class="btn btn-sm btn-danger" @click="handleDeleteCategory(cat)">🗑</button>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- 菜品管理 -->
-    <section class="admin-section">
-      <div class="section-header">
-        <h3 class="section-title">{{ t('products') }} ({{ products.length }})</h3>
-        <button class="btn btn-primary btn-sm" @click="openAddProduct">{{ t('addProduct') }}</button>
-      </div>
-      <!-- 按分类分组显示 -->
-      <div v-for="cat in categories" :key="cat.id">
-        <h4 class="cat-subtitle">{{ tName(cat.name) }} ({{ productsByCat(cat.id).length }})</h4>
-        <div v-for="p in productsByCat(cat.id)" :key="p.id" class="list-item">
-          <div class="list-item-info">
-            <span class="list-item-name">{{ tName(p.name) }}
-              <span v-if="p.recommended" class="badge badge-rec">⭐</span>
-              <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
-            </span>
-            <span class="list-item-price">{{ formatPrice(p.price) }}</span>
+        <!-- 二级分类 -->
+        <div class="sub-list">
+          <div v-for="sub in (cat.children || [])" :key="sub.id" class="sub-block">
+            <div class="sub-header">
+              <span class="sub-name">{{ tName(sub.name) }} ({{ (sub.items || []).length }})</span>
+              <div class="sub-actions">
+                <button class="btn btn-sm btn-outline" @click="openEditSubCategory(cat.id, sub)">✏️</button>
+                <button class="btn btn-sm btn-outline" @click="openAddItem(cat.id, sub.id)">+菜</button>
+                <button class="btn btn-sm btn-danger" @click="handleDeleteSubCategory(cat.id, sub)">🗑</button>
+              </div>
+            </div>
+            <!-- 菜品 -->
+            <div class="item-list">
+              <div v-for="item in (sub.items || [])" :key="item.id" class="item-row">
+                <span class="item-name">{{ tName(item.name) }}
+                  <span v-if="item.recommended" class="badge badge-rec">⭐</span>
+                  <span v-if="item.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
+                </span>
+                <span class="item-price">{{ formatPrice(item.price) }}</span>
+                <div class="item-actions">
+                  <button class="btn btn-sm btn-outline" @click="openEditItem(cat.id, sub.id, item)">✏️</button>
+                  <button class="btn btn-sm btn-danger" @click="handleDeleteItem(cat.id, sub.id, item)">🗑</button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="list-item-actions">
-            <button class="btn btn-sm btn-outline" @click="openEditProduct(p)">✏️</button>
-            <button class="btn btn-sm btn-danger" @click="handleDeleteProduct(p)">🗑</button>
-          </div>
+          <button class="btn btn-sm btn-outline btn-block" @click="openAddSubCategory(cat.id)" style="margin-top:6px">+ 二级分类</button>
         </div>
       </div>
     </section>
@@ -75,32 +61,14 @@
     <section class="admin-section">
       <h3 class="section-title">{{ t('contact') }}</h3>
       <div class="qr-uploads">
-        <div class="qr-upload-item">
-          <label>💬 微信</label>
-          <div class="qr-preview" v-if="contacts.wechat" @click="triggerQrUpload('wechat')">
-            <img :src="contacts.wechat" />
+        <div class="qr-upload-item" v-for="q in qrList" :key="q.key">
+          <label>{{ q.icon }} {{ q.label }}</label>
+          <div class="qr-preview" v-if="contacts[q.key]" @click="triggerQrUpload(q.key)">
+            <img :src="contacts[q.key]" />
           </div>
-          <div class="qr-upload-btn" v-else @click="triggerQrUpload('wechat')">+ 上传</div>
-          <button v-if="contacts.wechat" class="btn btn-sm btn-danger" @click="contacts.wechat='';saveContacts()">移除</button>
-          <input type="file" accept="image/*" :ref="el => qrInputs.wechat = el" style="display:none" @change="onQrUpload($event, 'wechat')" />
-        </div>
-        <div class="qr-upload-item">
-          <label>📱 WhatsApp</label>
-          <div class="qr-preview" v-if="contacts.whatsapp" @click="triggerQrUpload('whatsapp')">
-            <img :src="contacts.whatsapp" />
-          </div>
-          <div class="qr-upload-btn" v-else @click="triggerQrUpload('whatsapp')">+ 上传</div>
-          <button v-if="contacts.whatsapp" class="btn btn-sm btn-danger" @click="contacts.whatsapp='';saveContacts()">移除</button>
-          <input type="file" accept="image/*" :ref="el => qrInputs.whatsapp = el" style="display:none" @change="onQrUpload($event, 'whatsapp')" />
-        </div>
-        <div class="qr-upload-item">
-          <label>✈️ Telegram</label>
-          <div class="qr-preview" v-if="contacts.telegram" @click="triggerQrUpload('telegram')">
-            <img :src="contacts.telegram" />
-          </div>
-          <div class="qr-upload-btn" v-else @click="triggerQrUpload('telegram')">+ 上传</div>
-          <button v-if="contacts.telegram" class="btn btn-sm btn-danger" @click="contacts.telegram='';saveContacts()">移除</button>
-          <input type="file" accept="image/*" :ref="el => qrInputs.telegram = el" style="display:none" @change="onQrUpload($event, 'telegram')" />
+          <div class="qr-upload-btn" v-else @click="triggerQrUpload(q.key)">+ 上传</div>
+          <button v-if="contacts[q.key]" class="btn btn-sm btn-danger" @click="contacts[q.key]='';saveContacts()">移除</button>
+          <input type="file" accept="image/*" :ref="el => qrInputs[q.key] = el" style="display:none" @change="onQrUpload($event, q.key)" />
         </div>
       </div>
     </section>
@@ -115,43 +83,15 @@
       </div>
     </section>
 
-    <!-- 编辑大类弹窗 -->
-    <div v-if="showGroupEditor" class="modal-overlay" @click.self="showGroupEditor = false">
-      <div class="modal-content">
-        <h3 class="modal-title">{{ editingGroup?.id ? t('editGroup') : t('addGroup') }}</h3>
-        <div class="lang-inputs">
-          <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
-            <span class="lang-flag">{{ l.flag }}</span>
-            <input v-model="groupForm.name[l.code]" class="form-input" :placeholder="l.label" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">排序</label>
-          <input v-model.number="groupForm.sort" type="number" class="form-input" />
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-outline" @click="showGroupEditor = false">{{ t('cancel') }}</button>
-          <button class="btn btn-primary" @click="saveGroup">{{ t('save') }}</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 编辑分类弹窗 -->
+    <!-- 一级分类弹窗 -->
     <div v-if="showCategoryEditor" class="modal-overlay" @click.self="showCategoryEditor = false">
       <div class="modal-content">
-        <h3 class="modal-title">{{ editingCategory?.id ? t('editCategory') : t('addCategory') }}</h3>
+        <h3 class="modal-title">{{ editingCategory?.id ? '编辑一级分类' : '新增一级分类' }}</h3>
         <div class="lang-inputs">
           <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
             <span class="lang-flag">{{ l.flag }}</span>
             <input v-model="categoryForm.name[l.code]" class="form-input" :placeholder="l.label" />
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">所属大类</label>
-          <select v-model="categoryForm.groupId" class="form-select">
-            <option value="">-- 无 --</option>
-            <option v-for="g in sortedGroups" :key="g.id" :value="g.id">{{ tName(g.name) }}</option>
-          </select>
         </div>
         <div class="form-group">
           <label class="form-label">排序</label>
@@ -164,38 +104,52 @@
       </div>
     </div>
 
-    <!-- 编辑菜品弹窗 -->
-    <div v-if="showProductEditor" class="modal-overlay" @click.self="showProductEditor = false">
+    <!-- 二级分类弹窗 -->
+    <div v-if="showSubEditor" class="modal-overlay" @click.self="showSubEditor = false">
       <div class="modal-content">
-        <h3 class="modal-title">{{ editingProduct?.id ? t('editProduct') : t('addProduct') }}</h3>
-
+        <h3 class="modal-title">{{ editingSub?.id ? '编辑二级分类' : '新增二级分类' }}</h3>
         <div class="lang-inputs">
           <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
             <span class="lang-flag">{{ l.flag }}</span>
-            <input v-model="productForm.name[l.code]" class="form-input" :placeholder="t('name') + ' - ' + l.label" />
+            <input v-model="subForm.name[l.code]" class="form-input" :placeholder="l.label" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">排序</label>
+          <input v-model.number="subForm.sort" type="number" class="form-input" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="showSubEditor = false">{{ t('cancel') }}</button>
+          <button class="btn btn-primary" @click="saveSubCategory">{{ t('save') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜品弹窗 -->
+    <div v-if="showItemEditor" class="modal-overlay" @click.self="showItemEditor = false">
+      <div class="modal-content">
+        <h3 class="modal-title">{{ editingItem?.id ? t('editProduct') : t('addProduct') }}</h3>
+        <div class="lang-inputs">
+          <div v-for="l in langOptions" :key="l.code" class="lang-input-row">
+            <span class="lang-flag">{{ l.flag }}</span>
+            <input v-model="itemForm.name[l.code]" class="form-input" :placeholder="t('name') + ' - ' + l.label" />
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">{{ t('price') }}</label>
-          <input v-model.number="productForm.price" type="number" class="form-input" :placeholder="t('pricePlaceholder')" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ t('category') }}</label>
-          <select v-model="productForm.categoryId" class="form-select">
-            <option v-for="c in categories" :key="c.id" :value="c.id">{{ tName(c.name) }}</option>
-          </select>
+          <input v-model.number="itemForm.price" type="number" class="form-input" :placeholder="t('pricePlaceholder')" />
         </div>
         <div class="form-group">
           <label class="form-label">{{ t('image') }}</label>
           <input type="file" accept="image/*" @change="onImageUpload" class="form-input" />
-          <div v-if="productForm.image" style="margin-top:8px">
-            <img :src="productForm.image" style="max-width:150px;border-radius:8px" />
-            <button class="btn btn-sm btn-danger" style="margin-left:8px" @click="productForm.image = ''">移除</button>
+          <div v-if="itemForm.image" style="margin-top:8px">
+            <img :src="itemForm.image" style="max-width:150px;border-radius:8px" />
+            <button class="btn btn-sm btn-danger" style="margin-left:8px" @click="itemForm.image = ''">移除</button>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">{{ t('imagePosition') }}</label>
-          <select v-model="productForm.imagePosition" class="form-select">
+          <select v-model="itemForm.imagePosition" class="form-select">
             <option value="top">⬆ 顶部</option>
             <option value="bottom">⬇ 底部</option>
             <option value="left">⬅ 左侧</option>
@@ -206,15 +160,15 @@
         </div>
         <div class="form-group" style="display:flex;gap:16px">
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
-            <input type="checkbox" v-model="productForm.recommended" /> {{ t('recommended') }}
+            <input type="checkbox" v-model="itemForm.recommended" /> {{ t('recommended') }}
           </label>
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
-            <input type="checkbox" v-model="productForm.soldOut" /> {{ t('soldOut') }}
+            <input type="checkbox" v-model="itemForm.soldOut" /> {{ t('soldOut') }}
           </label>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-outline" @click="showProductEditor = false">{{ t('cancel') }}</button>
-          <button class="btn btn-primary" @click="saveProduct">{{ t('save') }}</button>
+          <button class="btn btn-outline" @click="showItemEditor = false">{{ t('cancel') }}</button>
+          <button class="btn btn-primary" @click="saveItem">{{ t('save') }}</button>
         </div>
       </div>
     </div>
@@ -231,9 +185,9 @@ const router = useRouter()
 const { t, tName, langOptions } = useI18n()
 const {
   getMenuData, setMenuData,
-  addGroup, updateGroup, deleteGroup,
   addCategory, updateCategory, deleteCategory,
-  addProduct, updateProduct, deleteProduct,
+  addSubCategory, updateSubCategory, deleteSubCategory,
+  addItem, updateItem, deleteItem,
   exportJSON, importJSON
 } = useMenuData()
 
@@ -241,153 +195,85 @@ const authed = ref(false)
 const data = ref(null)
 const contacts = reactive({ wechat: '', whatsapp: '', telegram: '' })
 const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
-const showGroupEditor = ref(false)
 const showCategoryEditor = ref(false)
-const showProductEditor = ref(false)
-const editingGroup = ref(null)
+const showSubEditor = ref(false)
+const showItemEditor = ref(false)
 const editingCategory = ref(null)
-const editingProduct = ref(null)
+const editingSub = ref(null)
+const editingItem = ref(null)
+const subParentId = ref('')
+const itemParentCatId = ref('')
+const itemParentSubId = ref('')
 const fileInput = ref(null)
 const shopNameEdit = reactive({ zh: '', am: '', en: '', ru: '' })
 
-const groupForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, sort: 0 })
-const categoryForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, groupId: '', sort: 0 })
-const productForm = reactive({
+const categoryForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, sort: 0 })
+const subForm = reactive({ name: { zh: '', am: '', en: '', ru: '' }, sort: 0 })
+const itemForm = reactive({
   name: { zh: '', am: '', en: '', ru: '' },
-  price: 0, categoryId: '', image: '', imagePosition: 'top',
-  recommended: false, soldOut: false
+  price: 0, image: '', imagePosition: 'top', recommended: false, soldOut: false
 })
 
-const products = computed(() => data.value?.products || [])
-const categories = computed(() => (data.value?.categories || []).sort((a, b) => a.sort - b.sort))
-const groups = computed(() => data.value?.groups || [])
-const sortedGroups = computed(() => groups.value.sort((a, b) => a.sort - b.sort))
+const qrList = [
+  { key: 'wechat', icon: '💬', label: '微信' },
+  { key: 'whatsapp', icon: '📱', label: 'WhatsApp' },
+  { key: 'telegram', icon: '✈️', label: 'Telegram' }
+]
 
-function productsByCat(catId) {
-  return products.value.filter(p => p.categoryId === catId)
-}
-
-function refreshData() {
-  data.value = getMenuData()
-  if (!data.value) return
-  // 迁移：旧数据没有 groups 数组和分类的 groupId
-  let migrated = false
-  if (!data.value.groups) {
-    data.value.groups = []
-    migrated = true
-  }
-  // 对没有 groupId 的分类，创建默认大类并分配
-  const unassigned = (data.value.categories || []).filter(c => !c.groupId)
-  if (unassigned.length > 0) {
-    let defaultGroup = data.value.groups.find(g => g.id === '__default__')
-    if (!defaultGroup) {
-      defaultGroup = { id: '__default__', name: { zh: '默认分类', am: 'Default', en: 'Default', ru: 'По умолчанию' }, sort: 0 }
-      data.value.groups.unshift(defaultGroup)
-    }
-    unassigned.forEach(c => { c.groupId = '__default__' })
-    migrated = true
-  }
-  if (migrated) setMenuData(data.value)
-  if (data.value.shopName) {
-    Object.assign(shopNameEdit, data.value.shopName)
-  }
-  if (data.value.contacts) {
-    Object.assign(contacts, data.value.contacts)
-  }
-}
-
-function saveContacts() {
-  const d = getMenuData()
-  if (d) {
-    d.contacts = { ...contacts }
-    setMenuData(d)
-  }
-}
-
-function triggerQrUpload(type) {
-  qrInputs[type]?.click()
-}
-
-function onQrUpload(e, type) {
-  const file = e.target.files?.[0]
-  if (!file) return
-  if (!file.type.startsWith('image/')) { alert('请上传图片文件'); return }
-  if (file.size > 1 * 1024 * 1024) { alert('图片不能超过1MB'); return }
-  const reader = new FileReader()
-  reader.onload = (ev) => {
-    contacts[type] = ev.target.result
-    saveContacts()
-  }
-  reader.readAsDataURL(file)
-}
-
-function saveShopName() {
-  const d = getMenuData()
-  if (d) {
-    d.shopName = { ...shopNameEdit }
-    setMenuData(d)
-    refreshData()
-  }
-}
+const categories = computed(() => data.value?.categories || [])
+const sortedCategories = computed(() => categories.value.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0)))
 
 function formatPrice(price) {
   if (price === 0) return '时价'
   return '֏ ' + price.toLocaleString()
 }
 
-// 大类操作
-function openAddGroup() {
-  editingGroup.value = null
-  groupForm.name = { zh: '', am: '', en: '', ru: '' }
-  groupForm.sort = (data.value?.groups?.length || 0)
-  showGroupEditor.value = true
-}
-function openEditGroup(g) {
-  editingGroup.value = g
-  groupForm.name = { ...g.name }
-  groupForm.sort = g.sort
-  showGroupEditor.value = true
-}
-function saveGroup() {
-  const nameObj = { ...groupForm.name }
-  if (editingGroup.value?.id) {
-    updateGroup(editingGroup.value.id, { name: nameObj, sort: groupForm.sort })
-  } else {
-    addGroup(nameObj)
-  }
-  showGroupEditor.value = false
-  refreshData()
-}
-function handleDeleteGroup(g) {
-  if (!confirm(t('deleteConfirm'))) return
-  deleteGroup(g.id)
-  refreshData()
+function refreshData() {
+  data.value = getMenuData()
+  if (!data.value) return
+  if (data.value.shopName) Object.assign(shopNameEdit, data.value.shopName)
+  if (data.value.contacts) Object.assign(contacts, data.value.contacts)
 }
 
-// 分类操作
+// 联系方式
+function saveContacts() {
+  const d = getMenuData()
+  if (d) { d.contacts = { ...contacts }; setMenuData(d) }
+}
+function triggerQrUpload(type) { qrInputs[type]?.click() }
+function onQrUpload(e, type) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) { alert('请上传图片文件'); return }
+  if (file.size > 1 * 1024 * 1024) { alert('图片不能超过1MB'); return }
+  const reader = new FileReader()
+  reader.onload = (ev) => { contacts[type] = ev.target.result; saveContacts() }
+  reader.readAsDataURL(file)
+}
+
+function saveShopName() {
+  const d = getMenuData()
+  if (d) { d.shopName = { ...shopNameEdit }; setMenuData(d); refreshData() }
+}
+
+// ========== 一级分类 ==========
 function openAddCategory() {
   editingCategory.value = null
   categoryForm.name = { zh: '', am: '', en: '', ru: '' }
-  categoryForm.groupId = ''
-  categoryForm.sort = (data.value?.categories?.length || 0)
+  categoryForm.sort = categories.value.length
   showCategoryEditor.value = true
 }
 function openEditCategory(cat) {
   editingCategory.value = cat
   categoryForm.name = { ...cat.name }
-  categoryForm.groupId = cat.groupId || ''
-  categoryForm.sort = cat.sort
+  categoryForm.sort = cat.sort || 0
   showCategoryEditor.value = true
 }
 function saveCategory() {
-  const nameObj = { ...categoryForm.name }
   if (editingCategory.value?.id) {
-    updateCategory(editingCategory.value.id, { name: nameObj, groupId: categoryForm.groupId || undefined, sort: categoryForm.sort })
+    updateCategory(editingCategory.value.id, { name: { ...categoryForm.name }, sort: categoryForm.sort })
   } else {
-    const d = getMenuData()
-    const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
-    d.categories.push({ id, name: nameObj, groupId: categoryForm.groupId || undefined, sort: categoryForm.sort })
-    setMenuData(d)
+    addCategory({ ...categoryForm.name })
   }
   showCategoryEditor.value = false
   refreshData()
@@ -398,50 +284,81 @@ function handleDeleteCategory(cat) {
   refreshData()
 }
 
-// 菜品操作
-function openAddProduct() {
-  editingProduct.value = null
-  productForm.name = { zh: '', am: '', en: '', ru: '' }
-  productForm.price = 0
-  productForm.categoryId = (data.value?.categories?.sort((a, b) => a.sort - b.sort)[0]?.id) || ''
-  productForm.image = ''
-  productForm.imagePosition = 'top'
-  productForm.recommended = false
-  productForm.soldOut = false
-  showProductEditor.value = true
+// ========== 二级分类 ==========
+function openAddSubCategory(catId) {
+  editingSub.value = null
+  subParentId.value = catId
+  subForm.name = { zh: '', am: '', en: '', ru: '' }
+  subForm.sort = (categories.value.find(c => c.id === catId)?.children?.length || 0)
+  showSubEditor.value = true
 }
-function openEditProduct(p) {
-  editingProduct.value = p
-  productForm.name = { ...p.name }
-  productForm.price = p.price
-  productForm.categoryId = p.categoryId
-  productForm.image = p.image || ''
-  productForm.imagePosition = p.imagePosition || 'top'
-  productForm.recommended = p.recommended || false
-  productForm.soldOut = p.soldOut || false
-  showProductEditor.value = true
+function openEditSubCategory(catId, sub) {
+  editingSub.value = sub
+  subParentId.value = catId
+  subForm.name = { ...sub.name }
+  subForm.sort = sub.sort || 0
+  showSubEditor.value = true
 }
-function saveProduct() {
-  const payload = {
-    name: { ...productForm.name },
-    price: productForm.price,
-    categoryId: productForm.categoryId,
-    image: productForm.image,
-    imagePosition: productForm.imagePosition,
-    recommended: productForm.recommended,
-    soldOut: productForm.soldOut
-  }
-  if (editingProduct.value?.id) {
-    updateProduct(editingProduct.value.id, payload)
+function saveSubCategory() {
+  if (editingSub.value?.id) {
+    updateSubCategory(subParentId.value, editingSub.value.id, { name: { ...subForm.name }, sort: subForm.sort })
   } else {
-    addProduct(payload)
+    addSubCategory(subParentId.value, { ...subForm.name })
   }
-  showProductEditor.value = false
+  showSubEditor.value = false
   refreshData()
 }
-function handleDeleteProduct(p) {
+function handleDeleteSubCategory(catId, sub) {
   if (!confirm(t('deleteConfirm'))) return
-  deleteProduct(p.id)
+  deleteSubCategory(catId, sub.id)
+  refreshData()
+}
+
+// ========== 菜品 ==========
+function openAddItem(catId, subId) {
+  editingItem.value = null
+  itemParentCatId.value = catId
+  itemParentSubId.value = subId
+  itemForm.name = { zh: '', am: '', en: '', ru: '' }
+  itemForm.price = 0
+  itemForm.image = ''
+  itemForm.imagePosition = 'top'
+  itemForm.recommended = false
+  itemForm.soldOut = false
+  showItemEditor.value = true
+}
+function openEditItem(catId, subId, item) {
+  editingItem.value = item
+  itemParentCatId.value = catId
+  itemParentSubId.value = subId
+  itemForm.name = { ...item.name }
+  itemForm.price = item.price
+  itemForm.image = item.image || ''
+  itemForm.imagePosition = item.imagePosition || 'top'
+  itemForm.recommended = item.recommended || false
+  itemForm.soldOut = item.soldOut || false
+  showItemEditor.value = true
+}
+function saveItem() {
+  const payload = {
+    name: { ...itemForm.name },
+    price: itemForm.price,
+    image: itemForm.image,
+    imagePosition: itemForm.imagePosition,
+    recommended: itemForm.recommended,
+    soldOut: itemForm.soldOut
+  }
+  if (editingItem.value?.id) {
+    updateItem(itemParentCatId.value, itemParentSubId.value, editingItem.value.id, payload)
+  } else {
+    addItem(itemParentCatId.value, itemParentSubId.value, payload)
+  }
+  showItemEditor.value = false
+  refreshData()
+}
+function handleDeleteItem(catId, subId, item) {
+  if (!confirm(t('deleteConfirm'))) return
+  deleteItem(catId, subId, item.id)
   refreshData()
 }
 function onImageUpload(e) {
@@ -450,7 +367,7 @@ function onImageUpload(e) {
   if (!file.type.startsWith('image/')) { alert('请上传图片文件'); return }
   if (file.size > 2 * 1024 * 1024) { alert('图片不能超过2MB'); return }
   const reader = new FileReader()
-  reader.onload = (ev) => { productForm.image = ev.target.result }
+  reader.onload = (ev) => { itemForm.image = ev.target.result }
   reader.readAsDataURL(file)
 }
 
@@ -479,7 +396,6 @@ function handleImportData(e) {
 }
 
 onMounted(() => {
-  // 检查登录状态：sessionStorage 中必须有登录标记
   const loggedIn = sessionStorage.getItem('ribuluo_admin_auth')
   if (!loggedIn) {
     router.replace('/admin')
@@ -504,20 +420,33 @@ onMounted(() => {
 .lang-input-row { display: flex; align-items: center; gap: 8px; }
 .lang-flag { font-size: 18px; width: 24px; text-align: center; }
 
-.list-items { display: flex; flex-direction: column; gap: 6px; }
-.list-item {
+.cat-block { margin-bottom: 12px; }
+.cat-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 10px; background: var(--bg-secondary); border-radius: 8px;
+  padding: 10px 12px; background: var(--bg-secondary); border-radius: 8px;
+  border-left: 3px solid var(--accent);
 }
-.list-item-info { display: flex; flex-direction: column; }
-.list-item-name { font-size: 14px; font-weight: 500; }
-.list-item-price { font-size: 13px; color: var(--text-price); }
-.list-item-actions { display: flex; gap: 4px; }
+.cat-name { font-size: 15px; font-weight: 600; }
+.cat-actions { display: flex; gap: 4px; }
 
-.cat-subtitle {
-  font-size: 13px; color: var(--accent); margin: 10px 0 4px;
-  padding-left: 4px; border-left: 2px solid var(--accent);
+.sub-list { padding-left: 12px; }
+.sub-block { margin-top: 4px; }
+.sub-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px; background: var(--bg-secondary); border-radius: 6px;
 }
+.sub-name { font-size: 13px; color: var(--accent-light); }
+.sub-actions { display: flex; gap: 4px; }
+
+.item-list { padding-left: 8px; }
+.item-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 8px; font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.item-name { flex: 1; }
+.item-price { color: var(--text-price); margin: 0 8px; font-weight: 600; white-space: nowrap; }
+.item-actions { display: flex; gap: 2px; }
 
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 4px; }
 .badge-rec { background: var(--badge-rec); color: #fff; }

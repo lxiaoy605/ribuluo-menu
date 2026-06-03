@@ -3,6 +3,33 @@ import { useMenuData } from './useMenuData'
 
 const themes = [
   {
+    id: 'pure-red',
+    name: { zh: '经典纯红', am: 'Կարմիր', en: 'Classic Red', ru: 'Классический красный' },
+    css: {
+      '--bg-primary': '#cc0000',
+      '--bg-secondary': '#b80000',
+      '--bg-card': '#aa0000',
+      '--text-primary': '#ffffff',
+      '--text-secondary': '#ffcccc',
+      '--text-price': '#ffff00',
+      '--accent': '#ffcc00',
+      '--accent-light': '#ffe066',
+      '--border': '#ffffff',
+      '--tab-bg': '#990000',
+      '--tab-active': '#ffcc00',
+      '--shadow': '0 2px 12px rgba(0,0,0,0.3)',
+      '--badge-rec': '#ffcc00',
+      '--badge-sold': '#666',
+      '--overlay': 'rgba(0,0,0,0.85)',
+      '--input-bg': '#990000',
+      '--input-border': '#ffffff',
+      '--danger': '#ff4444',
+      '--success': '#00cc66',
+      '--bg-texture': 'none',
+      '--card-border-color': '#ffffff'
+    }
+  },
+  {
     id: 'red-gold',
     name: { zh: '红金烧烤', am: 'Կարմիր-Ոսկե', en: 'Red & Gold Grill', ru: 'Красно-золотой гриль' },
     css: {
@@ -27,33 +54,6 @@ const themes = [
       '--success': '#27ae60',
       '--bg-texture': 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'%3E%3Crect width=\'40\' height=\'40\' fill=\'none\'/%3E%3Cpath d=\'M0 20h40M20 0v40\' stroke=\'%23c41e3a\' stroke-width=\'0.3\' opacity=\'0.06\'/%3E%3Cpath d=\'M0 0l40 40M40 0L0 40\' stroke=\'%23e8b44a\' stroke-width=\'0.2\' opacity=\'0.04\'/%3E%3C/svg%3E")',
       '--card-border-color': '#8b6914'
-    }
-  },
-  {
-    id: 'red-black',
-    name: { zh: '红与黑', am: 'Կարմիր-Սև', en: 'Red & Black', ru: 'Красно-черный' },
-    css: {
-      '--bg-primary': '#0d0d0d',
-      '--bg-secondary': '#1a0d0d',
-      '--bg-card': '#150a0a',
-      '--text-primary': '#e0d0c0',
-      '--text-secondary': '#a07060',
-      '--text-price': '#ff4444',
-      '--accent': '#cc1111',
-      '--accent-light': '#ff3333',
-      '--border': '#330a0a',
-      '--tab-bg': '#1a0d0d',
-      '--tab-active': '#cc1111',
-      '--shadow': '0 2px 16px rgba(255,0,0,0.15)',
-      '--badge-rec': '#cc1111',
-      '--badge-sold': '#444',
-      '--overlay': 'rgba(0,0,0,0.92)',
-      '--input-bg': '#1a0d0d',
-      '--input-border': '#330a0a',
-      '--danger': '#ff2222',
-      '--success': '#27ae60',
-      '--bg-texture': 'none',
-      '--card-border-color': '#660000'
     }
   },
   {
@@ -85,7 +85,7 @@ const themes = [
   }
 ]
 
-const currentTheme = ref('red-gold')
+const currentTheme = ref('pure-red')
 
 export function useTheme() {
   const { getMenuData, setMenuData } = useMenuData()
@@ -106,7 +106,7 @@ export function useTheme() {
 
   function initTheme() {
     const data = getMenuData()
-    const themeId = data?.theme || 'red-gold'
+    const themeId = data?.theme || 'pure-red'
     applyTheme(themeId)
   }
 

@@ -2,12 +2,10 @@ import { ref } from 'vue'
 
 const STORAGE_KEY = 'ribuluo_menu_data'
 
-// 生成唯一ID
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
 }
 
-// 读取菜单数据
 function getMenuData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -18,47 +16,31 @@ function getMenuData() {
   return null
 }
 
-// 保存菜单数据
 function setMenuData(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   } catch (e) {
-    console.error('保存数据失败，可能超出存储限制', e)
+    console.error('保存数据失败', e)
     return false
   }
   return true
 }
 
-// 初始化默认数据（含旧数据迁移）
 function initDefaultData(defaultData) {
   let existing = getMenuData()
   if (!existing) {
     setMenuData(defaultData)
     return defaultData
   }
+  // 迁移：检测旧格式（有 groups 或有 products 顶层数组）
   let migrated = false
-  // 迁移1：旧数据没有 groups 数组
-  if (!existing.groups) {
-    existing.groups = []
-    migrated = true
+  if (!existing.categories || existing.groups || existing.products) {
+    if (defaultData.categories && defaultData.categories.length > 0) {
+      existing.categories = JSON.parse(JSON.stringify(defaultData.categories))
+      existing.theme = 'pure-red'
+      migrated = true
+    }
   }
-  // 迁移2：旧数据分类没有 groupId，尝试从 group 字段推断
-  const needsGroupId = (existing.categories || []).filter(c => !c.groupId)
-  if (needsGroupId.length > 0) {
-    const groupMap = {}
-    needsGroupId.forEach(c => {
-      const gname = c.group || '默认分类'
-      if (!groupMap[gname]) {
-        const grp = { id: uid(), name: { zh: gname }, sort: Object.keys(groupMap).length }
-        groupMap[gname] = grp
-        existing.groups.push(grp)
-      }
-      c.groupId = groupMap[gname].id
-      delete c.group
-    })
-    migrated = true
-  }
-  // 迁移3：没有 contacts
   if (!existing.contacts) {
     existing.contacts = { wechat: '', whatsapp: '', telegram: '' }
     migrated = true
@@ -67,7 +49,6 @@ function initDefaultData(defaultData) {
   return existing
 }
 
-// 密码管理
 async function verifyPassword(input, hash) {
   return await sha256(input) === hash
 }
@@ -76,12 +57,160 @@ async function hashPassword(password) {
   return await sha256(password)
 }
 
-// 简单的 SHA-256 实现
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message)
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// ========== 一级分类 CRUD ==========
+function addCategory(nameObj) {
+  const d = getMenuData()
+  if (!d) return false
+  if (!d.categories) d.categories = []
+  d.categories.push({
+    id: uid(),
+    name: nameObj || { zh: '新分类' },
+    sort: d.categories.length,
+    children: []
+  })
+  return setMenuData(d)
+}
+
+function updateCategory(id, updates) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === id)
+  if (!cat) return false
+  Object.assign(cat, updates)
+  return setMenuData(d)
+}
+
+function deleteCategory(id) {
+  const d = getMenuData()
+  if (!d) return false
+  d.categories = d.categories.filter(c => c.id !== id)
+  return setMenuData(d)
+}
+
+// ========== 二级分类 CRUD ==========
+function addSubCategory(categoryId, nameObj) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === categoryId)
+  if (!cat) return false
+  if (!cat.children) cat.children = []
+  cat.children.push({
+    id: uid(),
+    name: nameObj || { zh: '新子分类' },
+    sort: cat.children.length,
+    items: []
+  })
+  return setMenuData(d)
+}
+
+function updateSubCategory(categoryId, subId, updates) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === categoryId)
+  if (!cat?.children) return false
+  const sub = cat.children.find(s => s.id === subId)
+  if (!sub) return false
+  Object.assign(sub, updates)
+  return setMenuData(d)
+}
+
+function deleteSubCategory(categoryId, subId) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === categoryId)
+  if (!cat?.children) return false
+  cat.children = cat.children.filter(s => s.id !== subId)
+  return setMenuData(d)
+}
+
+// ========== 三级菜品 CRUD ==========
+function addItem(categoryId, subId, product) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === categoryId)
+  if (!cat?.children) return false
+  const sub = cat.children.find(s => s.id === subId)
+  if (!sub) return false
+  if (!sub.items) sub.items = []
+  sub.items.push({
+    id: uid(),
+    name: product.name || { zh: '新菜品' },
+    price: product.price || 0,
+    image: product.image || '',
+    imagePosition: product.imagePosition || 'top',
+    recommended: product.recommended || false,
+    soldOut: product.soldOut || false
+  })
+  return setMenuData(d)
+}
+
+function updateItem(categoryId, subId, itemId, updates) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === categoryId)
+  if (!cat?.children) return false
+  const sub = cat.children.find(s => s.id === subId)
+  if (!sub?.items) return false
+  const item = sub.items.find(p => p.id === itemId)
+  if (!item) return false
+  Object.assign(item, updates)
+  return setMenuData(d)
+}
+
+function deleteItem(categoryId, subId, itemId) {
+  const d = getMenuData()
+  if (!d?.categories) return false
+  const cat = d.categories.find(c => c.id === categoryId)
+  if (!cat?.children) return false
+  const sub = cat.children.find(s => s.id === subId)
+  if (!sub?.items) return false
+  sub.items = sub.items.filter(p => p.id !== itemId)
+  return setMenuData(d)
+}
+
+// ========== 统计 ==========
+function getProductCount() {
+  const d = getMenuData()
+  if (!d?.categories) return 0
+  let count = 0
+  d.categories.forEach(cat => {
+    (cat.children || []).forEach(sub => {
+      count += (sub.items || []).length
+    })
+  })
+  return count
+}
+
+// ========== 数据导入导出 ==========
+function exportJSON() {
+  const d = getMenuData()
+  if (!d) return null
+  const exportData = JSON.parse(JSON.stringify(d))
+  delete exportData.passwordHash
+  return exportData
+}
+
+function importJSON(jsonStr) {
+  try {
+    const imported = JSON.parse(jsonStr)
+    const current = getMenuData()
+    if (current?.passwordHash) imported.passwordHash = current.passwordHash
+    if (current?.theme) imported.theme = current.theme
+    if (current?.currentLang) imported.currentLang = current.currentLang
+    if (!imported.categories) imported.categories = []
+    imported.shopName = imported.shopName || { zh: '店铺名称' }
+    return setMenuData(imported)
+  } catch (e) {
+    console.error('导入失败', e)
+    return false
+  }
 }
 
 export function useMenuData() {
@@ -97,155 +226,21 @@ export function useMenuData() {
     return ok
   }
 
-  // 分类操作
-  function addCategory(nameObj) {
-    const d = getMenuData() || { categories: [], products: [] }
-    d.categories.push({
-      id: uid(),
-      name: nameObj || { zh: '新分类' },
-      sort: d.categories.length
-    })
-    return save(d)
-  }
-
-  function updateCategory(id, updates) {
-    const d = getMenuData()
-    if (!d) return false
-    const idx = d.categories.findIndex(c => c.id === id)
-    if (idx === -1) return false
-    Object.assign(d.categories[idx], updates)
-    return save(d)
-  }
-
-  function deleteCategory(id) {
-    const d = getMenuData()
-    if (!d) return false
-    d.categories = d.categories.filter(c => c.id !== id)
-    d.products = d.products.filter(p => p.categoryId !== id)
-    return save(d)
-  }
-
-  // 菜品操作
-  function addProduct(product) {
-    const d = getMenuData()
-    if (!d) return false
-    d.products.push({
-      id: uid(),
-      name: product.name || { zh: '新菜品' },
-      price: product.price || 0,
-      categoryId: product.categoryId || (d.categories[0]?.id || ''),
-      image: product.image || '',
-      imagePosition: product.imagePosition || 'top',
-      recommended: product.recommended || false,
-      soldOut: product.soldOut || false
-    })
-    return save(d)
-  }
-
-  function updateProduct(id, updates) {
-    const d = getMenuData()
-    if (!d) return false
-    const idx = d.products.findIndex(p => p.id === id)
-    if (idx === -1) return false
-    Object.assign(d.products[idx], updates)
-    return save(d)
-  }
-
-  function deleteProduct(id) {
-    const d = getMenuData()
-    if (!d) return false
-    d.products = d.products.filter(p => p.id !== id)
-    return save(d)
-  }
-
-  // 大类(Group)操作
-  function addGroup(nameObj) {
-    const d = getMenuData()
-    if (!d) return false
-    if (!d.groups) d.groups = []
-    d.groups.push({
-      id: uid(),
-      name: nameObj || { zh: '新分类' },
-      sort: d.groups.length
-    })
-    return save(d)
-  }
-
-  function updateGroup(id, updates) {
-    const d = getMenuData()
-    if (!d) return false
-    const idx = (d.groups || []).findIndex(g => g.id === id)
-    if (idx === -1) return false
-    Object.assign(d.groups[idx], updates)
-    return save(d)
-  }
-
-  function deleteGroup(id) {
-    const d = getMenuData()
-    if (!d) return false
-    d.groups = (d.groups || []).filter(g => g.id !== id)
-    // 同时删除该大类下的分类及其菜品
-    const catIds = (d.categories || []).filter(c => c.groupId === id).map(c => c.id)
-    d.categories = (d.categories || []).filter(c => c.groupId !== id)
-    d.products = (d.products || []).filter(p => !catIds.includes(p.categoryId))
-    return save(d)
-  }
-
-  // 数据导入导出
-  function exportJSON() {
-    const d = getMenuData()
-    if (!d) return null
-    const exportData = JSON.parse(JSON.stringify(d))
-    delete exportData.passwordHash
-    return exportData
-  }
-
-  function importJSON(jsonStr) {
-    try {
-      const imported = JSON.parse(jsonStr)
-      const current = getMenuData()
-      // 保留当前密码
-      if (current?.passwordHash) {
-        imported.passwordHash = current.passwordHash
-      }
-      if (current?.theme) {
-        imported.theme = current.theme
-      }
-      if (current?.currentLang) {
-        imported.currentLang = current.currentLang
-      }
-      if (!imported.groups) imported.groups = []
-      if (!imported.categories) imported.categories = []
-      if (!imported.products) imported.products = []
-      imported.shopName = imported.shopName || { zh: '店铺名称' }
-      return save(imported)
-    } catch (e) {
-      console.error('导入失败', e)
-      return false
-    }
-  }
-
-  // 获取菜品总数
-  function getProductCount() {
-    const d = getMenuData()
-    return d?.products?.length || 0
-  }
-
   return {
     getMenuData,
     setMenuData: save,
     initDefaultData,
     verifyPassword,
     hashPassword,
-    addGroup,
-    updateGroup,
-    deleteGroup,
     addCategory,
     updateCategory,
     deleteCategory,
-    addProduct,
-    updateProduct,
-    deleteProduct,
+    addSubCategory,
+    updateSubCategory,
+    deleteSubCategory,
+    addItem,
+    updateItem,
+    deleteItem,
     exportJSON,
     importJSON,
     getProductCount,

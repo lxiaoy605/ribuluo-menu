@@ -4,7 +4,6 @@
     <!-- 店铺名称 -->
     <div class="shop-header">
       <h1 class="shop-name">{{ tName(shopName) }}</h1>
-      <p class="shop-desc" v-if="shopName.am">{{ tName(shopName) }}</p>
     </div>
 
     <!-- 搜索 -->
@@ -13,34 +12,34 @@
       <input v-model="searchQuery" :placeholder="t('search')" class="search-input" />
     </div>
 
-    <!-- 分类分组导航 -->
-    <div class="category-section" v-for="group in sortedGroups" :key="group.id">
-      <h3 class="group-title">{{ tName(group.name) }}</h3>
+    <!-- 三级导航 -->
+    <div class="category-section" v-for="cat in sortedCategories" :key="cat.id">
+      <h3 class="group-title">{{ tName(cat.name) }}</h3>
       <div class="category-tabs">
         <button
-          v-for="cat in catsByGroup(group.id)"
-          :key="cat.id"
+          v-for="sub in cat.children"
+          :key="sub.id"
           class="tab-btn"
-          :class="{ active: activeCategory === cat.id }"
-          @click="activeCategory = cat.id"
-        >{{ tName(cat.name) }}</button>
+          :class="{ active: activeSubCategory === sub.id }"
+          @click="activeSubCategory = sub.id"
+        >{{ tName(sub.name) }}</button>
       </div>
     </div>
 
     <!-- 无分类提示 -->
-    <div v-if="!categories.length" class="empty-hint">
+    <div v-if="!sortedCategories.length" class="empty-hint">
       <p>{{ t('menuEmpty') }}</p>
     </div>
 
-    <!-- 菜品列表 -->
-    <div class="product-list" v-if="filteredProducts.length">
-      <div class="product-card" v-for="p in filteredProducts" :key="p.id">
+    <!-- 菜品列表 - 双列网格 -->
+    <div class="product-list" v-if="filteredItems.length">
+      <div class="product-card" v-for="p in filteredItems" :key="p.id">
         <!-- 背景图模式 -->
         <template v-if="p.image && p.imagePosition === 'background'">
           <div class="card-bg" :style="{ backgroundImage: 'url(' + p.image + ')' }">
             <div class="card-bg-overlay">
               <div class="product-badges">
-                <span v-if="p.recommended" class="badge badge-rec">⭐ {{ langRec }}</span>
+                <span v-if="p.recommended" class="badge badge-rec">⭐</span>
                 <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
               </div>
               <h3 class="product-name">{{ tName(p.name) }}</h3>
@@ -55,7 +54,7 @@
             <img :src="p.image" :alt="tName(p.name)" class="product-img product-img-left" />
             <div class="card-info">
               <div class="product-badges">
-                <span v-if="p.recommended" class="badge badge-rec">⭐ {{ langRec }}</span>
+                <span v-if="p.recommended" class="badge badge-rec">⭐</span>
                 <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
               </div>
               <h3 class="product-name">{{ tName(p.name) }}</h3>
@@ -69,7 +68,7 @@
           <div class="card-layout-right">
             <div class="card-info">
               <div class="product-badges">
-                <span v-if="p.recommended" class="badge badge-rec">⭐ {{ langRec }}</span>
+                <span v-if="p.recommended" class="badge badge-rec">⭐</span>
                 <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
               </div>
               <h3 class="product-name">{{ tName(p.name) }}</h3>
@@ -85,7 +84,7 @@
             <img :src="p.image" :alt="tName(p.name)" class="product-img" />
           </div>
           <div class="product-badges">
-            <span v-if="p.recommended" class="badge badge-rec">⭐ {{ langRec }}</span>
+            <span v-if="p.recommended" class="badge badge-rec">⭐</span>
             <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
           </div>
           <h3 class="product-name">{{ tName(p.name) }}</h3>
@@ -98,13 +97,7 @@
     </div>
 
     <div v-else class="empty-hint">
-      <p>{{ activeCategory ? t('noProducts') : t('noMatch') }}</p>
-    </div>
-
-    <!-- 底部操作区 -->
-    <div class="bottom-bar">
-      <button class="bottom-btn" @click="showShare = true">📤 {{ t('share') }}</button>
-      <button class="bottom-btn primary" @click="showExport = true">📸 {{ t('export') }}</button>
+      <p>{{ activeSubCategory ? t('noProducts') : t('noMatch') }}</p>
     </div>
 
     <!-- 联系方式区域 -->
@@ -124,6 +117,12 @@
           <p>Telegram</p>
         </div>
       </div>
+    </div>
+
+    <!-- 底部操作区 -->
+    <div class="bottom-bar">
+      <button class="bottom-btn" @click="showShare = true">📤 {{ t('share') }}</button>
+      <button class="bottom-btn primary" @click="showExport = true">📸 {{ t('export') }}</button>
     </div>
 
     <!-- 分享弹窗 -->
@@ -146,12 +145,12 @@
         <div class="form-group">
           <label class="form-label">{{ t('resolution') }}</label>
           <div class="resolution-presets">
-            <button v-for="r in resolutions" :key="r.label" class="btn btn-sm"
-              :class="{ 'btn-primary': selectedRes === r, 'btn-outline': selectedRes !== r }"
-              @click="selectResolution(r)">{{ r.label }} ({{ r.w }}×{{ r.h }})</button>
+            <button v-for="(r, idx) in resolutions" :key="r.label" class="btn btn-sm"
+              :class="{ 'btn-primary': selectedResIdx === idx, 'btn-outline': selectedResIdx !== idx }"
+              @click="selectedResIdx = idx">{{ r.label }} ({{ r.w }}×{{ r.h }})</button>
           </div>
         </div>
-        <div v-if="selectedRes && selectedRes.custom" class="form-group">
+        <div v-if="resolutions[selectedResIdx].custom" class="form-group">
           <label class="form-label">宽 × 高 (px)</label>
           <div style="display:flex;gap:8px">
             <input v-model.number="customW" type="number" class="form-input" placeholder="宽度" />
@@ -173,64 +172,58 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useI18n } from '../composables/useI18n'
 import { useMenuData } from '../composables/useMenuData'
 
-const { t, tName, currentLang } = useI18n()
+const { t, tName } = useI18n()
 const { getMenuData } = useMenuData()
 
 const searchQuery = ref('')
-const activeCategory = ref('')
+const activeSubCategory = ref('')
 const showShare = ref(false)
 const showExport = ref(false)
 const exporting = ref(false)
 const qrContainer = ref(null)
-const selectedRes = ref(null)
+const selectedResIdx = ref(2) // 默认高清版
 const customW = ref(3174)
 const customH = ref(4490)
 
 const resolutions = [
   { label: '手机版', w: 1080, h: 1920 },
   { label: '海报版', w: 2480, h: 3508 },
-  { label: '高清版', w: 3174, h: 4490, default: true },
+  { label: '高清版', w: 3174, h: 4490 },
   { label: '自定义', w: 0, h: 0, custom: true }
 ]
 
-const data = computed(() => getMenuData() || { categories: [], products: [], shopName: {} })
+const data = computed(() => getMenuData() || { categories: [], shopName: {} })
 const shopName = computed(() => data.value.shopName || { zh: '菜单' })
 const contacts = computed(() => data.value.contacts || { wechat: '', whatsapp: '', telegram: '' })
 const hasContacts = computed(() => contacts.value.wechat || contacts.value.whatsapp || contacts.value.telegram)
-const categories = computed(() => (data.value.categories || []).sort((a, b) => a.sort - b.sort))
 
-const sortedGroups = computed(() => {
-  return (data.value.groups || []).sort((a, b) => a.sort - b.sort)
+const sortedCategories = computed(() => {
+  return (data.value.categories || []).slice().sort((a, b) => (a.sort || 0) - (b.sort || 0))
 })
 
-const catsByGroup = (groupId) => {
-  return categories.value.filter(c => c.groupId === groupId).sort((a, b) => a.sort - b.sort)
-}
-
-const filteredProducts = computed(() => {
-  let list = (data.value.products || []).filter(p => p.categoryId === activeCategory.value)
+// 当前选中二级分类下的所有菜品
+const filteredItems = computed(() => {
+  let items = []
+  for (const cat of sortedCategories.value) {
+    for (const sub of (cat.children || [])) {
+      if (sub.id === activeSubCategory.value) {
+        items = sub.items || []
+      }
+    }
+  }
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
-    list = list.filter(p =>
+    items = items.filter(p =>
       tName(p.name).toLowerCase().includes(q) ||
       p.price.toString().includes(q)
     )
   }
-  return list
-})
-
-const langRec = computed(() => {
-  const map = { zh: '招牌', am: 'Խորհուրդ', en: 'Recommended', ru: 'Рекомендуемое' }
-  return map[currentLang.value] || '招牌'
+  return items
 })
 
 function formatPrice(price) {
   if (price === 0) return '时价'
   return '֏ ' + price.toLocaleString()
-}
-
-function selectResolution(r) {
-  selectedRes.value = r
 }
 
 async function doExport() {
@@ -239,13 +232,15 @@ async function doExport() {
   await nextTick()
   try {
     const { default: html2canvas } = await import('html2canvas')
-    const el = document.querySelector('.menu-view')
-    if (!el) { exporting.value = false; return }
-    const res = selectedRes.value
+    const res = resolutions[selectedResIdx.value]
     const w = res?.custom ? (customW.value || 3174) : (res?.w || 3174)
     const h = res?.custom ? (customH.value || 4490) : (res?.h || 4490)
-    const scale = Math.max(w / el.offsetWidth, h / el.offsetHeight)
-    const canvas = await html2canvas(el, { scale, useCORS: true, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() })
+    // 构建海报 DOM
+    const poster = buildPoster()
+    document.body.appendChild(poster)
+    const scale = Math.max(w / poster.offsetWidth, h / poster.offsetHeight)
+    const canvas = await html2canvas(poster, { scale, useCORS: true, backgroundColor: '#cc0000' })
+    document.body.removeChild(poster)
     const link = document.createElement('a')
     link.download = '菜单_' + tName(shopName.value) + '_' + w + 'x' + h + '.png'
     link.href = canvas.toDataURL('image/png')
@@ -256,6 +251,64 @@ async function doExport() {
   exporting.value = false
 }
 
+function buildPoster() {
+  const d = data.value
+  const container = document.createElement('div')
+  container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1200px;background:#cc0000;color:#fff;padding:40px;font-family:sans-serif'
+  // 店铺名
+  const title = document.createElement('div')
+  title.style.cssText = 'text-align:center;font-size:48px;font-weight:bold;color:#ffcc00;margin-bottom:10px;letter-spacing:4px'
+  title.textContent = tName(d.shopName)
+  container.appendChild(title)
+  // 分隔线
+  const hr = document.createElement('div')
+  hr.style.cssText = 'border-bottom:2px solid #fff;margin-bottom:30px'
+  container.appendChild(hr)
+  // 遍历三级结构
+  ;(d.categories || []).sort((a,b) => (a.sort||0)-(b.sort||0)).forEach(cat => {
+    const catTitle = document.createElement('div')
+    catTitle.style.cssText = 'font-size:36px;font-weight:bold;color:#ffcc00;margin:30px 0 10px;padding-bottom:6px;border-bottom:2px solid #fff;letter-spacing:3px'
+    catTitle.textContent = tName(cat.name)
+    container.appendChild(catTitle)
+    ;(cat.children || []).sort((a,b) => (a.sort||0)-(b.sort||0)).forEach(sub => {
+      const subTitle = document.createElement('div')
+      subTitle.style.cssText = 'font-size:28px;font-weight:bold;color:#ffcccc;margin:20px 0 10px'
+      subTitle.textContent = tName(sub.name)
+      container.appendChild(subTitle)
+      // 菜品表头
+      const table = document.createElement('table')
+      table.style.cssText = 'width:100%;border-collapse:collapse;font-size:22px'
+      const thead = document.createElement('tr')
+      thead.style.cssText = 'border-bottom:1px solid rgba(255,255,255,0.3)'
+      const th1 = document.createElement('td')
+      th1.style.cssText = 'padding:8px 4px;color:#ffcccc;width:70%'
+      th1.textContent = '菜品'
+      const th2 = document.createElement('td')
+      th2.style.cssText = 'padding:8px 4px;color:#ffcccc;text-align:right'
+      th2.textContent = '价格'
+      thead.appendChild(th1)
+      thead.appendChild(th2)
+      table.appendChild(thead)
+      ;(sub.items || []).forEach(item => {
+        const row = document.createElement('tr')
+        const tdName = document.createElement('td')
+        tdName.style.cssText = 'padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.1)'
+        let nameText = tName(item.name)
+        if (item.recommended) nameText = '⭐ ' + nameText
+        tdName.textContent = nameText
+        const tdPrice = document.createElement('td')
+        tdPrice.style.cssText = 'padding:6px 4px;text-align:right;color:#ffff00;font-weight:bold;border-bottom:1px solid rgba(255,255,255,0.1);white-space:nowrap'
+        tdPrice.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
+        row.appendChild(tdName)
+        row.appendChild(tdPrice)
+        table.appendChild(row)
+      })
+      container.appendChild(table)
+    })
+  })
+  return container
+}
+
 function copyLink() {
   navigator.clipboard.writeText(window.location.href.split('#')[0]).then(() => {
     alert('链接已复制！')
@@ -264,17 +317,13 @@ function copyLink() {
   })
 }
 
-// 初始化默认分类
 function init() {
   const d = getMenuData()
-  const groups = (d?.groups || []).sort((a, b) => a.sort - b.sort)
-  if (groups.length) {
-    const cats = (d?.categories || []).filter(c => c.groupId === groups[0].id).sort((a, b) => a.sort - b.sort)
-    if (cats.length) { activeCategory.value = cats[0].id; return }
+  const cats = (d?.categories || []).sort((a, b) => (a.sort || 0) - (b.sort || 0))
+  if (cats.length) {
+    const subs = cats[0].children || []
+    if (subs.length) activeSubCategory.value = subs[0].id
   }
-  // 降级：没有大类时直接选第一个分类
-  const cats = (d?.categories || []).sort((a, b) => a.sort - b.sort)
-  if (cats.length) activeCategory.value = cats[0].id
 }
 
 onMounted(init)
@@ -307,11 +356,6 @@ watch(showShare, async (val) => {
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 2px;
-}
-.shop-desc {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
 }
 
 .search-bar {
@@ -416,12 +460,6 @@ watch(showShare, async (val) => {
 .contact-section h3 { font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; }
 .qr-codes { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
 .qr-placeholder { text-align: center; }
-.qr-box {
-  width: 80px; height: 80px; border: 2px dashed var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: var(--text-secondary);
-  border-radius: 8px; margin-bottom: 4px;
-}
 .qr-placeholder p { font-size: 11px; color: var(--text-secondary); }
 .qr-img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; }
 
