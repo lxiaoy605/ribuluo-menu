@@ -37,6 +37,8 @@
             <div class="item-list">
               <div v-for="item in (sub.items || [])" :key="item.id" class="item-row">
                 <span class="item-name">{{ tName(item.name) }}
+                  <span v-if="item.image" class="img-dot" title="已上传图片">📷</span>
+                  <span v-else class="img-dot no" title="暂无图片">⚪</span>
                   <span v-if="item.recommended" class="badge badge-rec">⭐</span>
                   <span v-if="item.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
                 </span>
@@ -297,22 +299,11 @@ const PAGE_PAD = 80
 const ROW_H = 58
 const SUB_H = 70
 const CAT_H = 80
+const TITLE_H = 100  // 标题占用高度（52px字体 + 20px下边距 + 上下留白）
 
 const pageCount = computed(() => {
-  let pages = 0
-  const bgH = PAGE_H - PAGE_PAD * 2
-  let curH = 0
-  for (const cat of sortedCategories.value) {
-    for (const sub of (cat.children || [])) {
-      const itemCount = (sub.items || []).length
-      const rows = Math.ceil(itemCount / 2)
-      const needH = CAT_H + SUB_H + rows * ROW_H
-      if (curH + needH > bgH && curH > 0) { pages++; curH = 0 }
-      curH += needH
-    }
-  }
-  if (curH > 0) pages++
-  return Math.max(pages, 1)
+  // 直接用 paginate 的结果，确保与实际分页一致
+  return paginate().length
 })
 
 function formatPrice(price) {
@@ -577,7 +568,7 @@ function buildPage(pageIdx, pageData) {
 function paginate() {
   const pages = []
   let curPage = []
-  const bgH = PAGE_H - PAGE_PAD * 2
+  const bgH = PAGE_H - PAGE_PAD * 2 - TITLE_H
   let curH = 0
   let lastCatId = null
 
@@ -590,10 +581,9 @@ function paginate() {
         const catOverhead = (cat.id === lastCatId && curPage.length > 0) ? 0 : CAT_H
         const overhead = catOverhead + SUB_H
         const availH = bgH - curH - overhead
-        const maxRows = Math.max(1, Math.floor(availH / ROW_H))
-        const maxItems = maxRows * 2
 
-        if (curPage.length > 0 && maxItems <= 0) {
+        // 剩余空间不够放一行 → 开新页
+        if (curPage.length > 0 && availH < ROW_H) {
           pages.push(curPage)
           curPage = []
           curH = 0
@@ -601,6 +591,8 @@ function paginate() {
           continue
         }
 
+        const maxRows = Math.max(1, Math.floor(availH / ROW_H))
+        const maxItems = maxRows * 2
         const batch = items.slice(0, Math.max(2, maxItems))
         items = items.slice(Math.max(2, maxItems))
         const rows = Math.ceil(batch.length / 2)
@@ -753,6 +745,8 @@ watch(() => getMenuData(), (menuData) => {
 .item-actions { display: flex; gap: 2px; }
 
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 4px; }
+.img-dot { font-size: 11px; margin-left: 2px; }
+.img-dot.no { opacity: 0.3; }
 .badge-rec { background: var(--badge-rec); color: var(--badge-text, #2B1600); }
 .badge-sold { background: var(--badge-sold); color: #fff; }
 
