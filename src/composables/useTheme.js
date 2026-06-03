@@ -30,6 +30,33 @@ const themes = [
     }
   },
   {
+    id: 'red-black',
+    name: { zh: '红与黑', am: 'Կարմիր-Սև', en: 'Red & Black', ru: 'Красно-черный' },
+    css: {
+      '--bg-primary': '#0d0d0d',
+      '--bg-secondary': '#1a0d0d',
+      '--bg-card': '#150a0a',
+      '--text-primary': '#e0d0c0',
+      '--text-secondary': '#a07060',
+      '--text-price': '#ff4444',
+      '--accent': '#cc1111',
+      '--accent-light': '#ff3333',
+      '--border': '#330a0a',
+      '--tab-bg': '#1a0d0d',
+      '--tab-active': '#cc1111',
+      '--shadow': '0 2px 16px rgba(255,0,0,0.15)',
+      '--badge-rec': '#cc1111',
+      '--badge-sold': '#444',
+      '--overlay': 'rgba(0,0,0,0.92)',
+      '--input-bg': '#1a0d0d',
+      '--input-border': '#330a0a',
+      '--danger': '#ff2222',
+      '--success': '#27ae60',
+      '--bg-texture': 'none',
+      '--card-border-color': '#660000'
+    }
+  },
+  {
     id: 'light-elegant',
     name: { zh: '雅致私厨', am: 'Էլեգանտ', en: 'Elegant Kitchen', ru: 'Элегантная кухня' },
     css: {

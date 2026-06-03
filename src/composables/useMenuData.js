@@ -29,13 +29,41 @@ function setMenuData(data) {
   return true
 }
 
-// 初始化默认数据
+// 初始化默认数据（含旧数据迁移）
 function initDefaultData(defaultData) {
-  const existing = getMenuData()
+  let existing = getMenuData()
   if (!existing) {
     setMenuData(defaultData)
     return defaultData
   }
+  let migrated = false
+  // 迁移1：旧数据没有 groups 数组
+  if (!existing.groups) {
+    existing.groups = []
+    migrated = true
+  }
+  // 迁移2：旧数据分类没有 groupId，尝试从 group 字段推断
+  const needsGroupId = (existing.categories || []).filter(c => !c.groupId)
+  if (needsGroupId.length > 0) {
+    const groupMap = {}
+    needsGroupId.forEach(c => {
+      const gname = c.group || '默认分类'
+      if (!groupMap[gname]) {
+        const grp = { id: uid(), name: { zh: gname }, sort: Object.keys(groupMap).length }
+        groupMap[gname] = grp
+        existing.groups.push(grp)
+      }
+      c.groupId = groupMap[gname].id
+      delete c.group
+    })
+    migrated = true
+  }
+  // 迁移3：没有 contacts
+  if (!existing.contacts) {
+    existing.contacts = { wechat: '', whatsapp: '', telegram: '' }
+    migrated = true
+  }
+  if (migrated) setMenuData(existing)
   return existing
 }
 
