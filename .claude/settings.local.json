@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__desktop-commander__read_file",
+      "mcp__filesystem__read_media_file",
+      "mcp__puppeteer__puppeteer_navigate",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "mcp__desktop-commander__write_file",
+      "Bash(node -e \"import\\('./src/data/defaultMenu.js'\\).then\\(m => { const d = m.defaultMenu; console.log\\('分类数:', d.categories.length, '菜品数:', d.products.length\\) }\\).catch\\(e => console.error\\(e\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(node -e \"try { require\\('fs'\\).readFileSync\\('src/composables/useI18n.js','utf8'\\); } catch\\(e\\) {}\")",
+      "Bash(node --check src/composables/useI18n.js)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
