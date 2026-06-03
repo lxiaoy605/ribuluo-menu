@@ -18,6 +18,7 @@
         </template>
         <!-- 管理页面：主题切换 + 编辑店名 -->
         <template v-if="isAdmin">
+          <span class="theme-label">风格切换:</span>
           <select class="theme-switch" v-model="currentTheme" @change="onThemeChangeAttempt">
             <option v-for="th in themeOptions" :key="th.id" :value="th.id">{{ tName(th.name) }}</option>
           </select>
@@ -93,8 +94,8 @@ function onEditShopName() {
   window.dispatchEvent(new CustomEvent('open-shop-name-editor'))
 }
 
-onMounted(() => {
-  initDefaultData(defaultMenu)
+onMounted(async () => {
+  await initDefaultData(defaultMenu)
   initTheme()
   initLang()
 })
@@ -116,6 +117,7 @@ onMounted(() => {
   --tab-active: #D4AF37;
   --shadow: 0 2px 12px rgba(0,0,0,0.3);
   --badge-rec: #D4AF37;
+  --badge-text: #2B1600;
   --badge-sold: #6A6A6A;
   --overlay: rgba(0,0,0,0.85);
   --input-bg: #4A1D18;
@@ -130,9 +132,11 @@ onMounted(() => {
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html { background: #1a1a1a; }
+
 body {
   font-family: var(--body-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
-  background: var(--bg-primary);
+  background: #1a1a1a;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
@@ -145,6 +149,7 @@ body {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  background: var(--bg-primary);
 }
 
 .app-header {
@@ -181,6 +186,8 @@ body {
 }
 
 .header-right { display: flex; align-items: center; gap: 8px; }
+
+.theme-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
 
 .lang-switch, .theme-switch {
   padding: 4px 8px;

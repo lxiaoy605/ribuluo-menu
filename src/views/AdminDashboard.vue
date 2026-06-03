@@ -491,8 +491,8 @@ function handleImportData(e) {
   const file = e.target.files?.[0]
   if (!file) return
   const reader = new FileReader()
-  reader.onload = (ev) => {
-    const ok = importJSON(ev.target.result)
+  reader.onload = async (ev) => {
+    const ok = await importJSON(ev.target.result)
     if (ok) { alert(t('importSuccess')); refreshData() }
     else { alert(t('importError')) }
   }
@@ -516,13 +516,9 @@ function buildPage(pageIdx, pageData) {
   page.appendChild(content)
 
   const title = document.createElement('div')
-  title.style.cssText = `text-align:center;font-size:52px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};margin-bottom:8px`
+  title.style.cssText = `text-align:center;font-size:52px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};margin-bottom:20px`
   title.textContent = tName(data.value?.shopName)
   content.appendChild(title)
-
-  const hr = document.createElement('div')
-  hr.style.cssText = `border-bottom:2px solid ${theme.css['--accent']};margin-bottom:20px;opacity:0.6`
-  content.appendChild(hr)
 
   const inner = document.createElement('div')
   inner.style.cssText = 'flex:1;overflow:hidden'
@@ -558,17 +554,14 @@ function buildPage(pageIdx, pageData) {
       colDiv.style.cssText = 'flex:1'
       col.forEach(item => {
         const row = document.createElement('div')
-        row.style.cssText = `display:flex;align-items:baseline;padding:4px 0;border-bottom:1px solid ${theme.css['--border']}`
+        row.style.cssText = `display:flex;align-items:baseline;justify-content:space-between;padding:4px 0;border-bottom:1px solid ${theme.css['--border']}`
         const nameSpan = document.createElement('span')
-        nameSpan.style.cssText = `flex:1;font-size:22px;color:${theme.css['--text-primary']}`
+        nameSpan.style.cssText = `font-size:22px;color:${theme.css['--text-primary']}`
         nameSpan.textContent = (item.recommended ? '⭐' : '') + tName(item.name)
-        const dotsSpan = document.createElement('span')
-        dotsSpan.style.cssText = `flex:1;border-bottom:1px solid ${theme.css['--border']};margin:0 4px`
         const priceSpan = document.createElement('span')
-        priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap`
+        priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap;margin-left:12px`
         priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
         row.appendChild(nameSpan)
-        row.appendChild(dotsSpan)
         row.appendChild(priceSpan)
         colDiv.appendChild(row)
       })
@@ -586,21 +579,36 @@ function paginate() {
   let curPage = []
   const bgH = PAGE_H - PAGE_PAD * 2
   let curH = 0
+  let lastCatId = null
 
   for (const cat of sortedCategories.value) {
     for (const sub of (cat.children || [])) {
-      const items = sub.items || []
+      let items = (sub.items || []).slice()
       if (!items.length) continue
-      const rows = Math.ceil(items.length / 2)
-      const needH = CAT_H + SUB_H + rows * ROW_H
 
-      if (curH + needH > bgH && curPage.length > 0) {
-        pages.push(curPage)
-        curPage = []
-        curH = 0
+      while (items.length > 0) {
+        const catOverhead = (cat.id === lastCatId && curPage.length > 0) ? 0 : CAT_H
+        const overhead = catOverhead + SUB_H
+        const availH = bgH - curH - overhead
+        const maxRows = Math.max(1, Math.floor(availH / ROW_H))
+        const maxItems = maxRows * 2
+
+        if (curPage.length > 0 && maxItems <= 0) {
+          pages.push(curPage)
+          curPage = []
+          curH = 0
+          lastCatId = null
+          continue
+        }
+
+        const batch = items.slice(0, Math.max(2, maxItems))
+        items = items.slice(Math.max(2, maxItems))
+        const rows = Math.ceil(batch.length / 2)
+
+        curPage.push({ cat, sub, items: batch })
+        curH += overhead + rows * ROW_H
+        lastCatId = cat.id
       }
-      curPage.push({ cat, sub, items })
-      curH += needH
     }
   }
   if (curPage.length) pages.push(curPage)
@@ -736,7 +744,7 @@ onUnmounted(() => {
 .item-actions { display: flex; gap: 2px; }
 
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 4px; }
-.badge-rec { background: var(--badge-rec); color: #fff; }
+.badge-rec { background: var(--badge-rec); color: var(--badge-text, #2B1600); }
 .badge-sold { background: var(--badge-sold); color: #fff; }
 
 /* 自定义选择组件 */

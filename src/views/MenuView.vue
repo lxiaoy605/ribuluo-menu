@@ -271,8 +271,8 @@ onMounted(() => {
   gap: 8px;
 }
 .item-thumb {
-  width: 48px;
-  height: 48px;
+  width: 160px;
+  height: 100px;
   border-radius: 6px;
   object-fit: cover;
   flex-shrink: 0;
@@ -310,7 +310,7 @@ onMounted(() => {
   border-radius: 3px;
   flex-shrink: 0;
 }
-.badge-rec { background: var(--badge-rec); color: #2B1600; }
+.badge-rec { background: var(--badge-rec); color: var(--badge-text, #2B1600); }
 .badge-sold { background: var(--badge-sold); color: #fff; }
 
 /* 空态 */
