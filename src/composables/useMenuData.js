@@ -7,6 +7,8 @@ const STORAGE_KEY = 'ribuluo_menu_data'
 const menuCache = ref(null)
 // 是否已从服务器加载过
 let serverLoaded = false
+// 数据是否确实来自 Supabase（非 localStorage 回退）
+let loadedFromServer = false
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
@@ -41,6 +43,7 @@ async function loadFromServer() {
       menuCache.value = data.data
       setLocalData(data.data)
       serverLoaded = true
+      loadedFromServer = true
       return data.data
     }
   } catch (e) {
@@ -118,8 +121,8 @@ async function initDefaultData(defaultData) {
 
   if (migrated) {
     await saveToServer(existing)
-  } else if (!serverLoaded) {
-    // 服务器没有数据但本地有缓存 → 把本地数据推送到服务器
+  } else if (!loadedFromServer) {
+    // 数据来自本地缓存，服务器为空 → 推送到服务器完成初始化
     await saveToServer(existing)
   }
 

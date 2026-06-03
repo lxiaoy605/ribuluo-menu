@@ -692,6 +692,15 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('open-shop-name-editor', onOpenShopNameEditor)
 })
+
+// 响应式同步数据（解决异步加载时序问题）
+watch(() => getMenuData(), (menuData) => {
+  if (menuData) {
+    data.value = menuData
+    if (menuData.shopName) Object.assign(shopNameEdit, menuData.shopName)
+    if (menuData.contacts) Object.assign(contacts, menuData.contacts)
+  }
+})
 </script>
 
 <style scoped>

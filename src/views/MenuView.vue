@@ -76,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from '../composables/useI18n'
 import { useMenuData } from '../composables/useMenuData'
 import { useTheme } from '../composables/useTheme'
@@ -178,12 +178,11 @@ function onTouchEnd(e) {
   }
 }
 
-onMounted(() => {
-  const cats = sortedCategories.value
-  if (cats.length && cats[0].children?.length) {
+watch(sortedCategories, (cats) => {
+  if (cats.length && cats[0].children?.length && !activeSubId.value) {
     activeSubId.value = cats[0].children[0].id
   }
-})
+}, { immediate: true })
 </script>
 
 <style scoped>
