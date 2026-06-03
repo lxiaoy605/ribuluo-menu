@@ -1,10 +1,5 @@
 <template>
   <div class="menu-view" :class="'theme-' + currentTheme">
-    <!-- 店铺名称 -->
-    <div class="shop-header">
-      <h1 class="shop-name">{{ tName(shopName) }}</h1>
-    </div>
-
     <!-- 搜索 -->
     <div class="search-bar">
       <span class="search-icon">🔍</span>
@@ -47,8 +42,9 @@
                 :key="p.id"
                 class="item-row"
               >
+                <img v-if="p.image" :src="p.image" class="item-thumb" />
                 <div class="item-info">
-                  <span class="item-name">{{ tName(p.name) }}</span>
+                  <span class="item-name" @click="copyName(p)">{{ tName(p.name) }}</span>
                   <span v-if="p.recommended" class="badge badge-rec">{{ t('recommended') }}</span>
                   <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
                 </div>
@@ -80,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '../composables/useI18n'
 import { useMenuData } from '../composables/useMenuData'
 import { useTheme } from '../composables/useTheme'
@@ -98,14 +94,12 @@ const subTabsContainer = ref(null)
 const catIcons = ['🔥', '🍳', '🍲', '🍺', '🥤', '🍰', '🍜', '🥗']
 
 const data = computed(() => getMenuData() || { categories: [], shopName: {} })
-const shopName = computed(() => data.value.shopName || { zh: '菜单' })
 
 const sortedCategories = computed(() => {
   return (data.value.categories || []).slice().sort((a, b) => (a.sort || 0) - (b.sort || 0))
 })
 
 function getCatItems(cat, catIdx) {
-  // 搜索模式下：跨所有子分类搜索
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
     let all = []
@@ -118,7 +112,6 @@ function getCatItems(cat, catIdx) {
     }
     return all
   }
-  // 正常模式：只显示当前激活的二级分类
   const sub = (cat.children || []).find(s => s.id === activeSubId.value)
   return sub ? (sub.items || []) : []
 }
@@ -126,6 +119,13 @@ function getCatItems(cat, catIdx) {
 function formatPrice(price) {
   if (price === 0) return '时价'
   return '֏ ' + price.toLocaleString()
+}
+
+function copyName(p) {
+  const name = tName(p.name)
+  navigator.clipboard.writeText(name).then(() => {
+    // 静默复制，无需提示
+  }).catch(() => {})
 }
 
 function switchCat(idx) {
@@ -140,7 +140,6 @@ function switchCat(idx) {
 
 function switchSub(subId, catId) {
   activeSubId.value = subId
-  // 确保当前一级分类匹配
   const idx = sortedCategories.value.findIndex(c => c.id === catId)
   if (idx >= 0 && idx !== activeCatIdx.value) {
     activeCatIdx.value = idx
@@ -188,23 +187,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ===== 店铺头部 ===== */
-.shop-header {
-  text-align: center;
-  padding: 16px 12px 8px;
-}
-.shop-name {
-  font-family: var(--title-font);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 4px;
-}
-
 /* ===== 搜索 ===== */
 .search-bar {
   display: flex; align-items: center; gap: 6px;
-  margin: 6px 12px; padding: 8px 12px;
+  margin: 10px 12px 6px; padding: 8px 12px;
   background: var(--bg-secondary); border-radius: 20px;
   border: 1px solid var(--border);
 }
@@ -259,7 +245,10 @@ onMounted(() => {
   white-space: nowrap;
   flex-shrink: 0;
   font-family: var(--body-font);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
+.sub-tab-btn:active { transform: scale(0.96); border-radius: 16px; }
 .sub-tab-btn.active {
   background: var(--accent);
   color: #fff;
@@ -273,15 +262,20 @@ onMounted(() => {
   padding: 4px 12px;
   -webkit-overflow-scrolling: touch;
 }
-.product-inner {
-  /* 内容 */
-}
 .item-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.item-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 .item-info {
   display: flex;
@@ -296,13 +290,16 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  user-select: text;
+  -webkit-user-select: text;
 }
+.item-name:active { color: var(--accent); }
 .item-price {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-price);
   white-space: nowrap;
-  margin-left: 12px;
   flex-shrink: 0;
 }
 
@@ -351,7 +348,10 @@ onMounted(() => {
   transition: all 0.2s;
   font-family: var(--body-font);
   gap: 2px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
+.nav-btn:active { transform: scale(0.95); }
 .nav-btn.active {
   color: var(--accent);
   background: rgba(212, 175, 55, 0.1);

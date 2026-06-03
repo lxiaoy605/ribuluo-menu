@@ -4,8 +4,11 @@
     <div class="app-header" v-if="!isLogin">
       <div class="header-left">
         <span class="brand-icon">🔥</span>
-        <span v-if="!isAdmin" class="brand-text">{{ tName(shopNameComputed) }}</span>
       </div>
+      <!-- 客户页面：店名居中 -->
+      <h1 v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</h1>
+      <!-- 管理页面：标题 -->
+      <span v-if="isAdmin" class="header-admin-title">{{ t('edit') }}</span>
       <div class="header-right">
         <!-- 客户页面：语言切换 -->
         <template v-if="!isAdmin">
@@ -18,7 +21,7 @@
           <select class="theme-switch" v-model="currentTheme" @change="onThemeChangeAttempt">
             <option v-for="th in themeOptions" :key="th.id" :value="th.id">{{ tName(th.name) }}</option>
           </select>
-          <button class="btn-admin-link" @click="$emit('editShopName')">✏️ {{ t('editShopName') }}</button>
+          <button class="btn-admin-link" @click="onEditShopName">✏️ {{ t('editShopName') }}</button>
         </template>
       </div>
     </div>
@@ -36,7 +39,7 @@
     </div>
 
     <main class="app-main">
-      <router-view @edit-shop-name="onEditShopName" />
+      <router-view />
     </main>
   </div>
 </template>
@@ -71,7 +74,6 @@ function onLangChange() {
 
 function onThemeChangeAttempt() {
   pendingTheme.value = currentTheme.value
-  // 先切回去，等确认后再切
   const d = getMenuData()
   const curId = d?.theme || 'bbq-red-gold'
   currentTheme.value = curId
@@ -88,7 +90,6 @@ function cancelThemeChange() {
 }
 
 function onEditShopName() {
-  // 通过事件触发 AdminDashboard 中的店名编辑弹窗
   window.dispatchEvent(new CustomEvent('open-shop-name-editor'))
 }
 
@@ -161,7 +162,23 @@ body {
 
 .header-left { display: flex; align-items: center; gap: 8px; }
 .brand-icon { font-size: 22px; }
-.brand-text { font-size: 14px; color: var(--text-secondary); }
+
+.header-shop-name {
+  font-family: var(--title-font);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 4px;
+  text-align: center;
+  flex: 1;
+}
+
+.header-admin-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  flex: 1;
+}
 
 .header-right { display: flex; align-items: center; gap: 8px; }
 
@@ -197,13 +214,27 @@ body {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   padding: 8px 16px; border: none; border-radius: 8px; font-size: 14px;
   cursor: pointer; transition: all 0.2s; font-family: var(--body-font);
+  outline: none; -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
 }
+.btn:active { transform: scale(0.96); border-radius: 8px; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent-light); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-sm { padding: 4px 12px; font-size: 12px; }
 .btn-block { width: 100%; }
 .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+
+/* 通用禁止拖选（菜品名称除外） */
+* {
+  user-select: none; -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+img { -webkit-user-drag: none; pointer-events: none; }
+input, textarea, select {
+  user-select: auto; -webkit-user-select: auto;
+}
 
 /* 通用表单 */
 .form-group { margin-bottom: 16px; }

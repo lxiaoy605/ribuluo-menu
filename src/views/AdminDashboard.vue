@@ -1,10 +1,11 @@
 <template>
   <div class="admin-page" v-if="authed">
-    <!-- 店铺名称 Modal 按钮触发 -->
+    <!-- 分享与导出 -->
     <section class="admin-section">
-      <h3 class="section-title">{{ t('shopName') }}</h3>
-      <p class="shop-name-display">{{ tName(shopNameEdit) }}</p>
-      <button class="btn btn-outline btn-sm" @click="showShopNameEditor = true">✏️ {{ t('editShopName') }}</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1" @click="showShare = true">📱 {{ t('share') }}</button>
+        <button class="btn btn-outline" style="flex:1" @click="showExportOptions = true">📸 {{ t('export') }}</button>
+      </div>
     </section>
 
     <!-- 一级分类管理 -->
@@ -65,15 +66,6 @@
           <button v-if="contacts[q.key]" class="btn btn-sm btn-danger" @click="contacts[q.key]='';saveContacts()">移除</button>
           <input type="file" accept="image/*" :ref="el => qrInputs[q.key] = el" style="display:none" @change="onQrUpload($event, q.key)" />
         </div>
-      </div>
-    </section>
-
-    <!-- 分享与导出 -->
-    <section class="admin-section">
-      <h3 class="section-title">📤 {{ t('share') }} & {{ t('export') }}</h3>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" @click="showShare = true">📱 {{ t('share') }}</button>
-        <button class="btn btn-outline" @click="showExportOptions = true">📸 {{ t('export') }}</button>
       </div>
     </section>
 
@@ -198,29 +190,16 @@
       </div>
     </div>
 
-    <!-- 导出选项弹窗 -->
+    <!-- 导出菜单弹窗 -->
     <div v-if="showExportOptions" class="modal-overlay" @click.self="showExportOptions = false">
       <div class="modal-content">
-        <h3 class="modal-title">{{ t('exportImage') }}</h3>
-        <div class="form-group">
-          <label class="form-label">{{ t('resolution') }}</label>
-          <div class="resolution-presets">
-            <button v-for="(r, idx) in resolutions" :key="r.label" class="btn btn-sm"
-              :class="{ 'btn-primary': selectedResIdx === idx, 'btn-outline': selectedResIdx !== idx }"
-              @click="selectedResIdx = idx">{{ r.label }} ({{ r.w }}×{{ r.h }})</button>
-          </div>
-        </div>
-        <div v-if="resolutions[selectedResIdx].custom" class="form-group">
-          <label class="form-label">宽 × 高 (px)</label>
-          <div style="display:flex;gap:8px">
-            <input v-model.number="customW" type="number" class="form-input" placeholder="宽度" />
-            <input v-model.number="customH" type="number" class="form-input" placeholder="高度" />
-          </div>
-        </div>
-        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+        <h3 class="modal-title">导出菜单</h3>
+        <p style="color:var(--text-secondary);margin-bottom:8px">分辨率 1456 × 2048</p>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">
           共 {{ pageCount }} 页，将导出 {{ pageCount }} 张图片
         </p>
         <div class="modal-actions">
+          <button class="btn btn-outline" @click="showExportOptions = false">{{ t('cancel') }}</button>
           <button class="btn btn-primary" @click="doExport" :disabled="exporting">
             {{ exporting ? '生成中...' : t('download') }}
           </button>
@@ -292,17 +271,7 @@ const showShare = ref(false)
 const showExportOptions = ref(false)
 const exporting = ref(false)
 const qrContainer = ref(null)
-const selectedResIdx = ref(0)
-const customW = ref(1080)
-const customH = ref(1920)
 const uploading = ref(false)
-
-const resolutions = [
-  { label: '手机版', w: 1080, h: 1920 },
-  { label: '海报版', w: 1456, h: 2048 },
-  { label: '高清版', w: 3174, h: 4490 },
-  { label: '自定义', w: 0, h: 0, custom: true }
-]
 
 const imagePosOptions = [
   { value: 'top', label: '⬆ 顶部' },
@@ -552,19 +521,24 @@ function buildPage(pageIdx, pageData) {
   content.appendChild(title)
 
   const hr = document.createElement('div')
-  hr.style.cssText = `border-bottom:2px solid ${theme.css['--border']};margin-bottom:20px`
+  hr.style.cssText = `border-bottom:2px solid ${theme.css['--accent']};margin-bottom:20px;opacity:0.6`
   content.appendChild(hr)
 
   const inner = document.createElement('div')
   inner.style.cssText = 'flex:1;overflow:hidden'
 
+  let lastCatId = null
   for (let di = 0; di < pageData.length; di++) {
     const { cat, sub, items } = pageData[di]
 
-    const catEl = document.createElement('div')
-    catEl.style.cssText = `text-align:center;font-size:36px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};padding:8px 0;margin-top:${di > 0 ? '20px' : '0'}`
-    catEl.innerHTML = `━━━━━━ &nbsp;${tName(cat.name)}&nbsp; ━━━━━━`
-    inner.appendChild(catEl)
+    // 只在分类变化时显示一级分类标题
+    if (cat.id !== lastCatId) {
+      const catEl = document.createElement('div')
+      catEl.style.cssText = `text-align:center;font-size:36px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};padding:8px 0;margin-top:${di > 0 ? '20px' : '0'}`
+      catEl.innerHTML = `━━━━━━ &nbsp;${tName(cat.name)}&nbsp; ━━━━━━`
+      inner.appendChild(catEl)
+      lastCatId = cat.id
+    }
 
     const subEl = document.createElement('div')
     subEl.style.cssText = `text-align:center;font-size:28px;color:${theme.css['--text-primary']};padding:6px 12px;margin:6px auto;background:${theme.css['--tab-bg']};border:1px solid ${theme.css['--accent']};display:inline-block;width:auto`
@@ -584,12 +558,12 @@ function buildPage(pageIdx, pageData) {
       colDiv.style.cssText = 'flex:1'
       col.forEach(item => {
         const row = document.createElement('div')
-        row.style.cssText = `display:flex;align-items:baseline;padding:4px 0;border-bottom:1px dotted ${theme.css['--border']}`
+        row.style.cssText = `display:flex;align-items:baseline;padding:4px 0;border-bottom:1px solid ${theme.css['--border']}`
         const nameSpan = document.createElement('span')
         nameSpan.style.cssText = `flex:1;font-size:22px;color:${theme.css['--text-primary']}`
         nameSpan.textContent = (item.recommended ? '⭐' : '') + tName(item.name)
         const dotsSpan = document.createElement('span')
-        dotsSpan.style.cssText = `flex:1;border-bottom:1px dotted ${theme.css['--border']};margin:0 4px`
+        dotsSpan.style.cssText = `flex:1;border-bottom:1px solid ${theme.css['--border']};margin:0 4px`
         const priceSpan = document.createElement('span')
         priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap`
         priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
@@ -649,14 +623,13 @@ async function doExport() {
 
 async function exportPNGs(pages) {
   const { default: html2canvas } = await import('html2canvas')
+  const EXPORT_W = 1456
+  const EXPORT_H = 2048
+  const scale = Math.max(EXPORT_W / PAGE_W, EXPORT_H / PAGE_H)
   for (let i = 0; i < pages.length; i++) {
     const pageEl = buildPage(i, pages[i])
     document.body.appendChild(pageEl)
     await nextTick()
-    const res = resolutions[selectedResIdx.value]
-    const w = res?.custom ? (customW.value || 1456) : (res?.w || 1456)
-    const h = res?.custom ? (customH.value || 2048) : (res?.h || 2048)
-    const scale = Math.max(w / PAGE_W, h / PAGE_H)
     const canvas = await html2canvas(pageEl, { scale, useCORS: true, allowTaint: true, backgroundColor: null })
     document.body.removeChild(pageEl)
     const link = document.createElement('a')
