@@ -55,34 +55,39 @@ onMounted(() => {
 <style>
 /* ===== CSS 变量由 useTheme.js 注入 ===== */
 :root {
-  --bg-primary: #cc0000;
-  --bg-secondary: #b80000;
-  --bg-card: #aa0000;
-  --text-primary: #ffffff;
-  --text-secondary: #ffcccc;
-  --text-price: #ffff00;
-  --accent: #ffcc00;
-  --accent-light: #ffe066;
-  --border: #ffffff;
-  --tab-bg: #990000;
-  --tab-active: #ffcc00;
+  --bg-primary: #3A1612;
+  --bg-secondary: #4A1D18;
+  --bg-card: #4A1D18;
+  --text-primary: #FFF4E2;
+  --text-secondary: #D9C8B2;
+  --text-price: #FFCC33;
+  --accent: #D4AF37;
+  --accent-light: #F7D66B;
+  --border: rgba(212,175,55,0.35);
+  --tab-bg: #3A1612;
+  --tab-active: #D4AF37;
   --shadow: 0 2px 12px rgba(0,0,0,0.3);
-  --badge-rec: #ffcc00;
-  --badge-sold: #666;
+  --badge-rec: #D4AF37;
+  --badge-sold: #6A6A6A;
   --overlay: rgba(0,0,0,0.85);
-  --input-bg: #990000;
-  --input-border: #ffffff;
-  --danger: #ff4444;
-  --success: #00cc66;
+  --input-bg: #4A1D18;
+  --input-border: rgba(212,175,55,0.35);
+  --danger: #c0392b;
+  --success: #27ae60;
   --bg-texture: none;
-  --card-border-color: #ffffff;
+  --card-border-color: rgba(212,175,55,0.4);
+  --title-font: "Alimama DongFangDaKai", "STKaiti", "KaiTi", "楷体", serif;
+  --body-font: "Noto Sans SC", "思源黑体", "Source Han Sans SC", sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--body-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
   background: var(--bg-primary);
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }

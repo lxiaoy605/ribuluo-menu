@@ -5,7 +5,7 @@
 
       <div class="form-group">
         <label class="form-label">用户名</label>
-        <input v-model="username" type="text" class="form-input" placeholder="admin" @keyup.enter="handleLogin" />
+        <input v-model="username" type="text" class="form-input" placeholder="请输入用户名" @keyup.enter="handleLogin" />
       </div>
 
       <div class="form-group">

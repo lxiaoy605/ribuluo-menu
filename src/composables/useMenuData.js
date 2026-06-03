@@ -37,12 +37,16 @@ function initDefaultData(defaultData) {
   if (!existing.categories || existing.groups || existing.products) {
     if (defaultData.categories && defaultData.categories.length > 0) {
       existing.categories = JSON.parse(JSON.stringify(defaultData.categories))
-      existing.theme = 'pure-red'
+      existing.theme = 'bbq-red-gold'
       migrated = true
     }
   }
   if (!existing.contacts) {
     existing.contacts = { wechat: '', whatsapp: '', telegram: '' }
+    migrated = true
+  }
+  if (!existing.passwordHash) {
+    existing.passwordHash = defaultData.passwordHash
     migrated = true
   }
   if (migrated) setMenuData(existing)
