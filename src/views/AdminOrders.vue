@@ -8,14 +8,25 @@
     <!-- 统计栏 -->
     <div class="stats-bar">
       <div class="stats-row">
-        <span>今日 待处理：<b>{{ stats.todayPending }}</b> 已处理：<b>{{ stats.todayCompleted }}</b> 已完成金额：<b>֏ {{ fmtNum(stats.todayAmount) }}</b></span>
+        <span class="stats-label">今日</span>
+        <span class="stats-group">
+          <span class="stats-item">待处理 <b>{{ stats.todayPending }}</b></span>
+          <span class="stats-item">已处理 <b>{{ stats.todayCompleted }}</b></span>
+          <span class="stats-item">已完成金额 <b>֏ {{ fmtNum(stats.todayAmount) }}</b></span>
+        </span>
       </div>
       <div class="stats-row">
-        <span>本月订单：<b>{{ stats.monthCount }}</b> 本月金额：<b>֏ {{ fmtNum(stats.monthAmount) }}</b></span>
+        <span class="stats-label">本月</span>
+        <span class="stats-group">
+          <span class="stats-item">订单 <b>{{ stats.monthCount }}</b></span>
+          <span class="stats-item">金额 <b>֏ {{ fmtNum(stats.monthAmount) }}</b></span>
+        </span>
         <a href="#" class="stats-detail-link" @click.prevent="openStatsModal">详细统计</a>
       </div>
     </div>
 
+    <!-- 订单内容区（搜索+列表） -->
+    <div class="ao-content-block">
     <!-- 搜索区 -->
     <div class="search-area">
       <input class="si-input" v-model="search.orderId" placeholder="订单号" />
@@ -41,7 +52,7 @@
     <!-- 页签 -->
     <div class="ao-tabs">
       <button class="ao-tab" :class="{ active: activeTab === 'pending' }" @click="switchTab('pending')">
-        待处理订单 ({{ pendingTotal }})
+        待处理 ({{ pendingTotal }})
       </button>
       <button class="ao-tab" :class="{ active: activeTab === 'completed' }" @click="switchTab('completed')">
         已完成 ({{ completedTotal }})
@@ -97,6 +108,10 @@
                 <button class="btn-copy-inline" @click="copyText(order.delivery_address)">📋</button>
               </span>
             </div>
+            <div class="di-row" v-if="order.delivery_address" style="gap:8px">
+              <a class="btn-delivery-app" :href="yandexGoUrl(order.delivery_address)" target="_blank">Yandex Go 🚕</a>
+              <a class="btn-delivery-app" :href="ggUrl(order.delivery_address)" target="_blank">GG 🛵</a>
+            </div>
             <div class="di-row">
               <span>配送费：֏ {{ (order.delivery_fee || 0).toLocaleString() }}</span>
               <button v-if="order.status === 'pending'" class="btn btn-sm btn-outline" @click="addDeliveryFee(order)">+ 追加配送费</button>
@@ -112,6 +127,7 @@
         <button :disabled="page >= totalPages" @click="page++; loadOrders()">›</button>
       </div>
     </div>
+    </div><!-- /ao-content-block -->
 
     <!-- ===== 编辑弹窗 ===== -->
     <div v-if="editOrder" class="modal-overlay" @click.self="editOrder = null">
@@ -198,12 +214,18 @@
       <div class="modal-content modal-wide">
         <h3 class="modal-title">订单统计明细</h3>
         <div class="stats-detail">
-          <p>本年订单数：<b>{{ stats.yearCount }}</b> 本年订单总金额：<b>֏ {{ fmtNum(stats.yearAmount) }}</b></p>
-          <p>本月订单数：<b>{{ stats.monthCount }}</b> 本月订单总金额：<b>֏ {{ fmtNum(stats.monthAmount) }}</b></p>
+          <div class="stats-detail-row">
+            <span>年订单：<b>{{ stats.yearCount }}</b></span>
+            <span>年总金额：<b>֏ {{ fmtNum(stats.yearAmount) }}</b></span>
+          </div>
+          <div class="stats-detail-row">
+            <span>月订单：<b>{{ stats.monthCount }}</b></span>
+            <span>月金额：<b>֏ {{ fmtNum(stats.monthAmount) }}</b></span>
+          </div>
         </div>
         <div class="chart-tabs">
-          <button :class="{ active: chartMode === 'month' }" @click="switchChart('month')">年内各月</button>
-          <button :class="{ active: chartMode === 'day' }" @click="switchChart('day')">月内各日</button>
+          <button :class="{ active: chartMode === 'month' }" @click="switchChart('month')">按月统计</button>
+          <button :class="{ active: chartMode === 'day' }" @click="switchChart('day')">按日统计</button>
         </div>
         <div class="chart-wrap"><canvas ref="chartCanvas"></canvas></div>
         <div class="modal-actions">
@@ -514,20 +536,37 @@ async function renderChart() {
     data: {
       labels,
       datasets: [{
-        label: '订单金额 (֏)',
+        label: '金额 (֏)',
         data,
-        backgroundColor: 'rgba(212,175,55,0.6)',
+        backgroundColor: 'rgba(212,175,55,0.5)',
         borderColor: '#D4AF37',
-        borderWidth: 1
+        borderWidth: 1,
+        borderRadius: 4
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        tooltip: { callbacks: { label: ctx => '֏ ' + ctx.raw.toLocaleString() } }
+        tooltip: {
+          backgroundColor: '#3A1612',
+          titleColor: '#D4AF37',
+          bodyColor: '#FFF4E2',
+          borderColor: '#D4AF37',
+          borderWidth: 1,
+          callbacks: { label: ctx => '֏ ' + ctx.raw.toLocaleString() }
+        }
       },
       scales: {
-        y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
+        x: {
+          ticks: { color: '#D9C8B2' },
+          grid: { color: 'rgba(212,175,55,0.15)' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#D9C8B2', callback: v => v.toLocaleString() },
+          grid: { color: 'rgba(212,175,55,0.15)' }
+        }
       }
     }
   })
@@ -540,6 +579,15 @@ function fmtTime(ts) {
   const d = new Date(ts)
   return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
 }
+function yandexGoUrl(address) {
+  const encoded = encodeURIComponent(address || '')
+  return `https://3.redirect.appmetrica.yandex.com/route?end-lat=&end-lon=&tariffClass=cargo&ref=ribuluo&appmetrica_tracking_id=1178268795219780156`
+}
+
+function ggUrl(address) {
+  return 'ggtaxi://'
+}
+
 function copyText(text) {
   navigator.clipboard.writeText(text).catch(() => {})
   showToast('已复制')
@@ -590,14 +638,21 @@ onUnmounted(() => {
 .ao-title { font-size: 17px; font-weight: 600; }
 
 /* 统计栏 */
-.stats-bar { padding: 8px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.8; }
-.stats-row { display: flex; justify-content: space-between; align-items: center; }
+.stats-bar { padding: 10px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.8; margin-bottom: 8px; }
+.stats-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.stats-label { color: var(--text-secondary); flex-shrink: 0; }
+.stats-group { display: flex; gap: 12px; flex: 1; justify-content: space-around; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.stats-item { white-space: nowrap; }
 .stats-row b { color: var(--accent); }
-.stats-detail-link { font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: underline; }
+.stats-detail-link { font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline; flex-shrink: 0; }
+
+/* 订单内容区块 */
+.ao-content-block { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--bg-primary); border-radius: 8px 8px 0 0; overflow: hidden; }
 
 /* 搜索区 */
-.search-area { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.search-area { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-secondary); }
 .si-input, .si-select { flex: 1; min-width: 80px; padding: 5px 6px; font-size: 11px; border-radius: 4px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-primary); font-family: var(--body-font); }
+.si-input::placeholder, .si-select::placeholder { color: var(--text-secondary); opacity: 0.5; }
 .si-input:focus, .si-select:focus { border-color: var(--accent); outline: none; }
 
 /* 页签 */
@@ -609,7 +664,7 @@ onUnmounted(() => {
 .order-list { flex: 1; overflow-y: auto; padding: 8px; }
 .order-card { background: var(--bg-secondary); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
 .oc-summary { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; }
-.ocs-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.ocs-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; justify-content: space-between; }
 .ocs-id { font-size: 12px; font-weight: 700; color: var(--accent); font-family: monospace; }
 .ocs-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; }
 .badge-dine { background: var(--accent); color: var(--badge-text, #2B1600); }
@@ -619,7 +674,7 @@ onUnmounted(() => {
 .ocs-fee { font-size: 11px; color: var(--text-secondary); }
 .ocs-expand { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
 
-.oc-detail { padding: 0 10px 10px; border-top: 1px solid var(--border); }
+.oc-detail { padding: 0 10px 10px; border-top: 1px solid var(--border); background: var(--bg-primary); }
 .ocd-actions { display: flex; gap: 6px; padding: 8px 0; flex-wrap: wrap; }
 
 /* 详情表格 */
@@ -630,6 +685,17 @@ onUnmounted(() => {
 .di-row { display: flex; gap: 8px; }
 .di-row span { flex: 1; }
 .btn-copy-inline { background: none; border: none; cursor: pointer; font-size: 13px; padding: 0 2px; }
+.btn-delivery-app {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+  font-family: var(--body-font);
+}
+.btn-delivery-app:active { background: var(--accent); color: var(--badge-text, #2B1600); }
 
 /* 分页 */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 12px 0; font-size: 13px; }
@@ -649,6 +715,7 @@ onUnmounted(() => {
 
 .item-picker { margin-top: 6px; }
 .ip-search { width: 100%; padding: 6px 8px; font-size: 12px; border: 1px solid var(--input-border); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); }
+.ip-search::placeholder { color: var(--text-secondary); opacity: 0.5; }
 .ip-dropdown { max-height: 180px; overflow-y: auto; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; margin-top: 2px; }
 .ip-item { padding: 6px 8px; cursor: pointer; font-size: 12px; border-bottom: 1px solid var(--border); }
 .ip-item:last-child { border-bottom: none; }
@@ -661,6 +728,7 @@ onUnmounted(() => {
 .edit-form .form-label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
 .edit-form .form-input { width: 100%; padding: 6px 8px; font-size: 13px; border: 1px solid var(--input-border); border-radius: 4px; background: var(--input-bg); color: var(--text-primary); font-family: var(--body-font); }
 .edit-form .form-input:focus { border-color: var(--accent); outline: none; }
+.edit-form .form-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
 .form-split { display: flex; gap: 8px; }
 .form-split > div { flex: 1; }
 .radio-row { display: flex; gap: 12px; }
@@ -669,8 +737,9 @@ onUnmounted(() => {
 textarea.form-input { resize: vertical; }
 
 /* 统计弹窗 */
-.stats-detail p { margin: 6px 0; font-size: 13px; }
-.stats-detail b { color: var(--accent); }
+.stats-detail { margin-bottom: 8px; }
+.stats-detail-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; font-size: 13px; }
+.stats-detail-row b { color: var(--accent); }
 .chart-tabs { display: flex; gap: 8px; margin: 10px 0; }
 .chart-tabs button { padding: 4px 12px; border: 1px solid var(--border); background: var(--tab-bg); color: var(--text-secondary); border-radius: 4px; cursor: pointer; font-size: 12px; }
 .chart-tabs button.active { background: var(--accent); color: var(--badge-text, #2B1600); border-color: var(--accent); }

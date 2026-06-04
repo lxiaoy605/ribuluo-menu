@@ -231,10 +231,6 @@
                   <button class="btn-copy-inline" @click="copyText(order.delivery_address)">📋</button>
                 </span>
               </div>
-              <div class="di-row" v-if="order.delivery_address" style="gap:8px">
-                <a class="btn-delivery-app" :href="yandexGoUrl(order.delivery_address)" target="_blank">Yandex Go 🚕</a>
-                <a class="btn-delivery-app" :href="ggUrl(order.delivery_address)" target="_blank">GG 🛵</a>
-              </div>
               <div class="di-row" v-if="order.delivery_fee">
                 <span>配送费：֏ {{ order.delivery_fee.toLocaleString() }}</span>
               </div>
@@ -460,16 +456,6 @@ function fmtTime(ts) {
   const hh = String(d.getHours()).padStart(2, '0')
   const mi = String(d.getMinutes()).padStart(2, '0')
   return mm + '/' + dd + ' ' + hh + ':' + mi
-}
-
-function yandexGoUrl(address) {
-  const encoded = encodeURIComponent(address || '')
-  return `https://3.redirect.appmetrica.yandex.com/route?end-lat=&end-lon=&tariffClass=cargo&ref=ribuluo&appmetrica_tracking_id=1178268795219780156`
-}
-
-function ggUrl(address) {
-  const encoded = encodeURIComponent(address || '')
-  return `ggtaxi://`
 }
 
 function copyText(text) {
@@ -771,17 +757,7 @@ onMounted(() => {
 .status-done { color: var(--success); }
 
 .btn-copy-inline { background: none; border: none; cursor: pointer; font-size: 13px; padding: 0 2px; }
-.btn-delivery-app {
-  display: inline-block;
-  padding: 4px 10px;
-  font-size: 11px;
-  border-radius: 12px;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  text-decoration: none;
-  font-family: var(--body-font);
-}
-.btn-delivery-app:active { background: var(--accent); color: var(--badge-text, #2B1600); }
+
 
 /* 成功弹窗 */
 .success-order-id {

@@ -219,6 +219,29 @@
 
 **Git 提交**：`fix: 购物车脚标脉冲动画+数量输入框blur更新+提交后跳转历史`
 
+### 2026-06-04 管理端UI优化 + 三方配送修正
+
+**三方配送位置修正**
+- 用户端 CartView：移除历史订单详情中的 YandexGo/GG 链接（仅管理端需要）
+- 管理端 AdminOrders：订单详情新增三方配送跳转按钮
+
+**管理端顶栏修复** (`src/App.vue`)
+- 修复管理页顶栏色块遮盖按钮问题：移除 flex:1 spacer，改用 margin-left:auto
+- 全局添加 `.form-input::placeholder` / `.form-select::placeholder` 主题样式
+
+**订单管理页全面重构** (`src/views/AdminOrders.vue`)
+- 统计栏：标签+边框分组+散列对齐（今日 [待处理/已处理/金额] | 本月 [订单/金额]）
+- 页签："待处理订单" → "待处理"
+- 层次结构：搜索+列表包裹为 `.ao-content-block`，与统计栏拉开距离
+- 订单详情背景色 `var(--bg-primary)` 与列表 `var(--bg-secondary)` 区分
+- 列表列 `justify-content: space-between` 散列对齐
+- 统计弹窗标签改写："年订单/年总金额/月订单/月金额" → 行内散列对齐
+- 图表页签："年内各月/月内各日" → "按月统计/按日统计"
+- Chart.js 柱状图主题适配：深色背景tooltip + 主题色网格线/文字 + 圆角柱状
+- 全文 input/select 添加 `::placeholder` 主题样式
+
+**构建验证**：`npm run build` 零报错
+
 ## 下一步
 
 1. ❗ 用户在 Supabase SQL Editor 中执行 `supabase/orders_v2_migration.sql`（包含 delivery_fee 字段）

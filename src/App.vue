@@ -11,9 +11,7 @@
       </div>
       <!-- 客户页面：店名居中 -->
       <span v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</span>
-      <!-- 管理页面：占位 -->
-      <span v-if="isAdmin" style="flex:1"></span>
-      <div class="header-right" :class="{ scrollable: isAdmin }">
+      <div class="header-right" :class="{ scrollable: isAdmin, 'header-right-admin': isAdmin }">
         <!-- 客户页面：语言切换 -->
         <template v-if="!isAdmin">
           <select class="lang-switch" v-model="currentLang" @change="onLangChange">
@@ -330,6 +328,7 @@ body {
 }
 
 .header-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.header-right-admin { flex: 0 1 auto; margin-left: auto; }
 .header-right.scrollable {
   overflow-x: auto;
   flex-wrap: nowrap;
@@ -418,6 +417,7 @@ input, textarea, select {
   font-family: var(--body-font);
 }
 .form-input:focus, .form-select:focus { border-color: var(--accent); }
+.form-input::placeholder, .form-select::placeholder { color: var(--text-secondary); opacity: 0.55; }
 
 /* Modal */
 .modal-overlay {
