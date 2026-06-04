@@ -185,7 +185,9 @@
             </span>
             <span class="hs-time">{{ fmtTime(order.created_at) }}</span>
             <span class="hs-amount">֏ {{ (order.total_amount || 0).toLocaleString() }}</span>
-            <span class="hs-expand">{{ expandedIds.has(order.id) ? t('collapse') : t('expand') }}</span>
+            <span class="hs-expand">
+              <button class="btn btn-sm btn-outline">{{ expandedIds.has(order.id) ? t('collapse') : t('expand') }}</button>
+            </span>
             <span class="hs-modify">
               <button
                 v-if="order.status === 'pending'"
@@ -733,10 +735,8 @@ onMounted(() => {
 }
 .hs-expand {
   flex: 0.7;
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-align: center;
-  white-space: nowrap;
+  display: flex;
+  justify-content: center;
 }
 .hs-modify {
   flex: 0.7;
