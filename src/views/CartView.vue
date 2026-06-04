@@ -50,9 +50,9 @@
 
         <!-- 预订表单 -->
         <div class="order-form">
-          <!-- 称呼（整行） -->
+          <!-- 称呼（整行，选填） -->
           <div class="form-group">
-            <label class="form-label">{{ t('customerName') }} <span class="required-star">*</span></label>
+            <label class="form-label">{{ t('customerName') }}</label>
             <input
               class="form-input"
               :value="cartForm.customerName"
@@ -74,13 +74,14 @@
               />
             </div>
             <div class="form-group form-half">
-              <label class="form-label">{{ t('expectedTime') }}</label>
+              <label class="form-label">{{ t('expectedTime') }} <span class="required-star">*</span></label>
               <input
                 class="form-input"
                 type="datetime-local"
                 :value="cartForm.expectedTime"
                 @input="updateForm({ expectedTime: $event.target.value })"
                 :min="nowISO()"
+                required
               />
             </div>
           </div>
@@ -320,12 +321,16 @@ async function handleSubmit() {
     return
   }
   const form = cartForm.value
-  if (!form.customerName || !form.customerName.trim()) {
-    submitError.value = '请填写称呼'
-    return
-  }
   if (!form.guestCount || form.guestCount < 1) {
     submitError.value = '请填写人数'
+    return
+  }
+  if (!form.expectedTime || !form.expectedTime.trim()) {
+    submitError.value = '请选择预订时间'
+    return
+  }
+  if (!form.contactType) {
+    submitError.value = '请选择联系方式'
     return
   }
   if (!form.contactInfo || !form.contactInfo.trim()) {
@@ -334,10 +339,6 @@ async function handleSubmit() {
   }
   if (form.orderMode === 'delivery' && !form.deliveryAddress.trim()) {
     submitError.value = '请填写配送地址'
-    return
-  }
-  if (form.expectedTime && form.expectedTime < nowISO()) {
-    submitError.value = '预订时间不能早于当前时间'
     return
   }
 

@@ -40,6 +40,8 @@ function _saveCart() {
 }
 
 function _defaultForm() {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
   return {
     orderMode: 'dine_in',
     deliveryAddress: '',
@@ -48,7 +50,7 @@ function _defaultForm() {
     contactType: 'phone',
     contactInfo: '',
     notes: '',
-    expectedTime: ''
+    expectedTime: now.toISOString().slice(0, 16)
   }
 }
 
