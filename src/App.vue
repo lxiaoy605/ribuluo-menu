@@ -2,26 +2,22 @@
   <div class="app" :class="'theme-' + currentTheme">
     <!-- 登录页不显示顶栏 -->
     <div class="app-header" v-if="!isLogin">
-      <div class="header-left">
+      <div class="header-left" v-if="!isAdmin">
         <span class="brand-icon">🔥</span>
       </div>
       <!-- 客户页面：店名居中 -->
-      <h1 v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</h1>
+      <span v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</span>
       <!-- 管理页面：占位 -->
       <span v-if="isAdmin" style="flex:1"></span>
-      <div class="header-right">
+      <div class="header-right" :class="{ scrollable: isAdmin }">
         <!-- 客户页面：语言切换 -->
         <template v-if="!isAdmin">
           <select class="lang-switch" v-model="currentLang" @change="onLangChange">
             <option v-for="l in langOptions" :key="l.code" :value="l.code">{{ l.flag }} {{ l.label }}</option>
           </select>
         </template>
-        <!-- 管理页面：主题切换 + 编辑店名 -->
+        <!-- 管理页面：操作按钮 -->
         <template v-if="isAdmin">
-          <span class="theme-label">风格切换:</span>
-          <select class="theme-switch" v-model="currentTheme" @change="onThemeChangeAttempt">
-            <option v-for="th in themeOptions" :key="th.id" :value="th.id">{{ tName(th.name) }}</option>
-          </select>
           <button class="btn-admin-link" @click="onEditShopName">✏️ {{ t('editShopName') }}</button>
           <button class="btn-admin-link" @click="showPwdModal = true">🔑 重置密码</button>
           <button class="btn-admin-link" @click="doLogout">🚪 退出</button>
@@ -238,22 +234,23 @@ body {
 
 .header-shop-name {
   font-family: var(--title-font);
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--accent);
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   text-align: center;
   flex: 1;
 }
 
-.header-admin-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--accent);
-  flex: 1;
-}
-
 .header-right { display: flex; align-items: center; gap: 8px; }
+.header-right.scrollable {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.header-right.scrollable::-webkit-scrollbar { display: none; }
 
 .theme-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
 

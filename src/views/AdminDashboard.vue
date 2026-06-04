@@ -60,15 +60,14 @@
       <h3 class="section-title">{{ t('contact') }}</h3>
       <div class="qr-uploads">
         <div class="qr-upload-item" v-for="q in qrList" :key="q.key">
-          <label>{{ q.icon }} {{ q.label }}</label>
-          <div class="qr-col">
-            <div class="qr-preview" v-if="contacts[q.key].url" @click="triggerQrUpload(q.key)">
-              <img :src="contacts[q.key].url" />
-            </div>
-            <div class="qr-upload-btn" v-else @click="triggerQrUpload(q.key)">+ 上传</div>
-            <input class="form-input form-input-sm" v-model="contacts[q.key].name" :placeholder="q.label + '账号名'" @change="saveContacts" style="margin-top:6px;width:120px" />
+          <span class="qr-label">{{ q.label }}</span>
+          <div class="qr-preview" v-if="contacts[q.key].url" @click="triggerQrUpload(q.key)">
+            <img :src="contacts[q.key].url" />
           </div>
-          <button v-if="contacts[q.key].url" class="btn btn-sm btn-danger" @click="contacts[q.key].url='';contacts[q.key].name='';saveContacts()">移除</button>
+          <div class="qr-upload-btn" v-else @click="triggerQrUpload(q.key)">+</div>
+          <input class="form-input qr-name-input" v-model="qrNames[q.key]" :placeholder="q.label + '账号'" />
+          <button class="btn btn-sm btn-primary" @click="saveQrName(q.key)">保存</button>
+          <button v-if="contacts[q.key].url" class="btn btn-sm btn-danger" @click="removeQr(q.key)">移除</button>
           <input type="file" accept="image/*" :ref="el => qrInputs[q.key] = el" style="display:none" @change="onQrUpload($event, q.key)" />
         </div>
       </div>
@@ -256,6 +255,7 @@ const contacts = reactive({
   whatsapp: { url: '', name: '' },
   telegram: { url: '', name: '' }
 })
+const qrNames = reactive({ wechat: '', whatsapp: '', telegram: '' })
 const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
 const showCategoryEditor = ref(false)
 const showSubEditor = ref(false)
@@ -325,7 +325,12 @@ function refreshData() {
   data.value = getMenuData()
   if (!data.value) return
   if (data.value.shopName) Object.assign(shopNameEdit, data.value.shopName)
-  if (data.value.contacts) Object.assign(contacts, data.value.contacts)
+  if (data.value.contacts) {
+    Object.assign(contacts, data.value.contacts)
+    for (const k of ['wechat', 'whatsapp', 'telegram']) {
+      qrNames[k] = (data.value.contacts[k] && data.value.contacts[k].name) || ''
+    }
+  }
 }
 
 // 店名
@@ -336,7 +341,15 @@ function saveShopName() {
 }
 
 // 联系方式
-function saveContacts() {
+function saveQrName(key) {
+  contacts[key].name = qrNames[key]
+  const d = getMenuData()
+  if (d) { d.contacts = { ...contacts }; setMenuData(d) }
+}
+function removeQr(key) {
+  contacts[key].url = ''
+  contacts[key].name = ''
+  qrNames[key] = ''
   const d = getMenuData()
   if (d) { d.contacts = { ...contacts }; setMenuData(d) }
 }
@@ -349,7 +362,8 @@ function onQrUpload(e, type) {
   uploading.value = true
   uploadImage(file).then(result => {
     contacts[type].url = result.url
-    saveContacts()
+    const d = getMenuData()
+    if (d) { d.contacts = { ...contacts }; setMenuData(d) }
     uploading.value = false
   }).catch(err => {
     alert('上传失败: ' + err.message)
@@ -736,7 +750,12 @@ watch(() => getMenuData(), (menuData) => {
   if (menuData) {
     data.value = menuData
     if (menuData.shopName) Object.assign(shopNameEdit, menuData.shopName)
-    if (menuData.contacts) Object.assign(contacts, menuData.contacts)
+    if (menuData.contacts) {
+      Object.assign(contacts, menuData.contacts)
+      for (const k of ['wechat', 'whatsapp', 'telegram']) {
+        qrNames[k] = (menuData.contacts[k] && menuData.contacts[k].name) || ''
+      }
+    }
   }
 })
 </script>
@@ -816,16 +835,20 @@ watch(() => getMenuData(), (menuData) => {
 
 .qr-uploads { display: flex; flex-direction: column; gap: 12px; }
 .qr-upload-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px; background: var(--bg-secondary); border-radius: 8px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--bg-secondary); border-radius: 8px;
+  flex-wrap: wrap;
 }
-.qr-upload-item label { width: 80px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
-.qr-preview { width: 60px; height: 60px; cursor: pointer; border-radius: 6px; overflow: hidden; }
+.qr-label { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; min-width: 60px; }
+.qr-preview { width: 48px; height: 48px; cursor: pointer; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
 .qr-preview img { width: 100%; height: 100%; object-fit: cover; }
 .qr-upload-btn {
-  width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
   border: 2px dashed var(--input-border); border-radius: 6px;
-  font-size: 12px; color: var(--text-secondary); cursor: pointer;
+  font-size: 12px; color: var(--text-secondary); cursor: pointer; flex-shrink: 0;
+}
+.qr-name-input {
+  flex: 1; min-width: 80px; padding: 6px 8px; font-size: 12px;
 }
 .qr-col {
   display: flex; flex-direction: column; align-items: center;
