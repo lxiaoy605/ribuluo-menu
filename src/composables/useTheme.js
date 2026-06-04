@@ -16,7 +16,7 @@ const themes = [
     name: { zh: '红金烧烤', am: 'Կարմիր-Ոսկե', en: 'BBQ Red & Gold', ru: 'Красно-золотой' },
     bgImage: '/themes/bbq-red-gold/bg.jpg',
     fonts: {
-      title: '"Alimama DongFangDaKai", "STKaiti", "KaiTi", "楷体", serif',
+      title: '"Ma Shan Zheng", "STKaiti", "KaiTi", "楷体", cursive',
       body: '"Noto Sans SC", "思源黑体", "Source Han Sans SC", sans-serif'
     },
     css: {
@@ -42,7 +42,7 @@ const themes = [
       '--success': '#27ae60',
       '--bg-texture': 'none',
       '--card-border-color': 'rgba(212,175,55,0.4)',
-      '--title-font': '"Alimama DongFangDaKai", "STKaiti", "KaiTi", "楷体", serif',
+      '--title-font': '"Ma Shan Zheng", "STKaiti", "KaiTi", "楷体", cursive',
       '--body-font': '"Noto Sans SC", "思源黑体", "Source Han Sans SC", sans-serif'
     }
   },
@@ -52,7 +52,7 @@ const themes = [
     name: { zh: '经典纯红', am: 'Կարմիր', en: 'Classic Red', ru: 'Классический красный' },
     bgImage: '/themes/classic-red/bg.jpg',
     fonts: {
-      title: '"Noto Serif SC", "Source Han Serif SC", "思源宋体", "STSong", "宋体", serif',
+      title: '"Ma Shan Zheng", "STKaiti", "KaiTi", "楷体", cursive',
       body: '"Noto Sans SC", "思源黑体", "Source Han Sans SC", "PingFang SC", sans-serif'
     },
     css: {
@@ -78,7 +78,7 @@ const themes = [
       '--success': '#27ae60',
       '--bg-texture': 'none',
       '--card-border-color': 'transparent',
-      '--title-font': '"Noto Serif SC", "Source Han Serif SC", "思源宋体", "STSong", serif',
+      '--title-font': '"Ma Shan Zheng", "STKaiti", "KaiTi", "楷体", cursive',
       '--body-font': '"Noto Sans SC", "思源黑体", "Source Han Sans SC", sans-serif'
     }
   },

@@ -657,12 +657,12 @@ onUnmounted(() => {
 .ao-title { font-size: 17px; font-weight: 600; }
 
 /* 统计栏 */
-.stats-bar { padding: 12px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 2.2; margin-bottom: 8px; }
-.stats-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 0; }
-.stats-row:first-child { border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
-.stats-row:last-child { padding-top: 8px; }
+.stats-bar { padding: 8px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.8; margin-bottom: 8px; }
+.stats-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 2px 0; }
+.stats-row:first-child { border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+.stats-row:last-child { padding-top: 6px; }
 .stats-label { color: var(--text-secondary); flex-shrink: 0; }
-.stats-group { display: flex; gap: 12px; flex: 1; justify-content: space-around; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.stats-group { display: flex; gap: 8px; flex: 1; justify-content: space-around; padding: 2px 6px; border: 1px solid var(--border); border-radius: 6px; }
 .stats-item { white-space: nowrap; }
 .stats-row b { color: var(--accent); }
 .stats-detail-link { font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline; flex-shrink: 0; }
