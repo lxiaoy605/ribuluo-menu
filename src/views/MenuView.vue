@@ -42,13 +42,47 @@
                 :key="p.id"
                 class="item-row"
               >
-                <img v-if="p.image" :src="p.image" class="item-thumb" />
-                <div class="item-info">
-                  <span class="item-name" @click="copyName(p)">{{ tName(p.name) }}</span>
-                  <span v-if="p.recommended" class="badge badge-rec">{{ t('recommended') }}</span>
-                  <span v-if="p.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
-                </div>
-                <span class="item-price">{{ formatPrice(p.price) }}</span>
+                <!-- 售罄：保持原布局，不显示数量控件 -->
+                <template v-if="p.soldOut">
+                  <img v-if="p.image" :src="p.image" class="item-thumb" />
+                  <div class="item-info">
+                    <span class="item-name" @click="copyName(p)">{{ tName(p.name) }}</span>
+                    <span v-if="p.recommended" class="badge badge-rec">{{ t('recommended') }}</span>
+                    <span class="badge badge-sold">{{ t('soldOut') }}</span>
+                  </div>
+                  <span class="item-price">{{ formatPrice(p.price) }}</span>
+                </template>
+                <!-- 有图：图片 + 双行信息（名称/价格+数量） -->
+                <template v-else-if="p.image">
+                  <img :src="p.image" class="item-thumb" />
+                  <div class="item-info-col">
+                    <div class="item-info-row1">
+                      <span class="item-name" @click="copyName(p)">{{ tName(p.name) }}</span>
+                      <span v-if="p.recommended" class="badge badge-rec">{{ t('recommended') }}</span>
+                    </div>
+                    <div class="item-info-row2">
+                      <span class="item-price">{{ formatPrice(p.price) }}</span>
+                      <div class="qty-ctrl">
+                        <button class="qty-btn" :disabled="getItemQty(p.id)===0" @click="removeItem(p.id)">−</button>
+                        <input class="qty-input" :value="getItemQty(p.id)" @input="e => onQtyInput(p.id, e)" inputmode="numeric" />
+                        <button class="qty-btn" :disabled="getItemQty(p.id)>=999" @click="addItem(p)">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <!-- 无图：单行（名称 + 数量 + 价格） -->
+                <template v-else>
+                  <div class="item-info">
+                    <span class="item-name" @click="copyName(p)">{{ tName(p.name) }}</span>
+                    <span v-if="p.recommended" class="badge badge-rec">{{ t('recommended') }}</span>
+                  </div>
+                  <div class="qty-ctrl">
+                    <button class="qty-btn" :disabled="getItemQty(p.id)===0" @click="removeItem(p.id)">−</button>
+                    <input class="qty-input" :value="getItemQty(p.id)" @input="e => onQtyInput(p.id, e)" inputmode="numeric" />
+                    <button class="qty-btn" :disabled="getItemQty(p.id)>=999" @click="addItem(p)">+</button>
+                  </div>
+                  <span class="item-price">{{ formatPrice(p.price) }}</span>
+                </template>
               </div>
             </div>
             <div v-else class="empty-hint">
@@ -102,10 +136,12 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from '../composables/useI18n'
 import { useMenuData } from '../composables/useMenuData'
 import { useTheme } from '../composables/useTheme'
+import { useCart } from '../composables/useCart'
 
 const { t, tName } = useI18n()
 const { getMenuData } = useMenuData()
 const { currentTheme, getTheme } = useTheme()
+const { addItem, removeItem, getItemQty, setItemQty } = useCart()
 
 const searchQuery = ref('')
 const activeCatIdx = ref(0)
@@ -184,6 +220,17 @@ function copyName(p) {
   navigator.clipboard.writeText(name).then(() => {
     // 静默复制，无需提示
   }).catch(() => {})
+}
+
+function onQtyInput(productId, event) {
+  const raw = event.target.value
+  if (raw === '') {
+    setItemQty(productId, 0)
+    return
+  }
+  const val = parseInt(raw, 10)
+  if (isNaN(val)) return
+  setItemQty(productId, val)
 }
 
 function switchCat(idx) {
@@ -368,6 +415,71 @@ watch(sortedCategories, (cats) => {
   color: var(--text-price);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ===== 数量控件 ===== */
+.qty-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: var(--tab-bg);
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: var(--body-font);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.qty-btn:first-child { border-radius: 6px 0 0 6px; }
+.qty-btn:last-child { border-radius: 0 6px 6px 0; }
+.qty-btn:active:not(:disabled) { transform: scale(0.93); }
+.qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.qty-input {
+  width: 36px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-left: none;
+  border-right: none;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 13px;
+  padding: 0 2px;
+  outline: none;
+  font-family: var(--body-font);
+  -webkit-appearance: none;
+  border-radius: 0;
+}
+.qty-input:focus { border-color: var(--accent); }
+
+/* 有图菜品的双行布局 */
+.item-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.item-info-row1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.item-info-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* 徽章 */

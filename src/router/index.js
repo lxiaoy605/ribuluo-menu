@@ -15,6 +15,16 @@ const routes = [
     path: '/admin/dashboard',
     name: 'admin-dashboard',
     component: () => import('../views/AdminDashboard.vue')
+  },
+  {
+    path: '/cart',
+    name: 'cart',
+    component: () => import('../views/CartView.vue')
+  },
+  {
+    path: '/admin/orders',
+    name: 'admin-orders',
+    component: () => import('../views/AdminOrders.vue')
   }
 ]
 

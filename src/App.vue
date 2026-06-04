@@ -3,7 +3,8 @@
     <!-- 登录页不显示顶栏 -->
     <div class="app-header" v-if="!isLogin">
       <div class="header-left" v-if="!isAdmin">
-        <span class="brand-icon">🔥</span>
+        <span class="cart-icon" @click="goCart">🛒</span>
+        <span v-if="itemCount > 0" class="cart-badge" @click="goCart">{{ itemCount }}</span>
       </div>
       <!-- 客户页面：店名居中 -->
       <span v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</span>
@@ -77,6 +78,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from './composables/useI18n'
 import { useTheme } from './composables/useTheme'
 import { useMenuData } from './composables/useMenuData'
+import { useCart } from './composables/useCart'
 import { defaultMenu } from './data/defaultMenu'
 
 const route = useRoute()
@@ -84,6 +86,7 @@ const router = useRouter()
 const { t, tName, currentLang, setLang, initLang, langOptions } = useI18n()
 const { currentTheme, applyTheme, initTheme, themeOptions } = useTheme()
 const { getMenuData, initDefaultData, verifyPassword, hashPassword, setMenuData } = useMenuData()
+const { itemCount } = useCart()
 
 const isLogin = computed(() => route.path === '/admin' || route.path === '/admin/')
 const isAdmin = computed(() => route.path.startsWith('/admin'))
@@ -125,6 +128,10 @@ function cancelThemeChange() {
 
 function onEditShopName() {
   window.dispatchEvent(new CustomEvent('open-shop-name-editor'))
+}
+
+function goCart() {
+  router.push('/cart')
 }
 
 function doLogout() {
@@ -233,8 +240,24 @@ body {
   backdrop-filter: blur(10px);
 }
 
-.header-left { display: flex; align-items: center; gap: 8px; }
-.brand-icon { font-size: 22px; }
+.header-left { display: flex; align-items: center; gap: 8px; position: relative; }
+.cart-icon { font-size: 22px; cursor: pointer; }
+.cart-badge {
+  position: absolute;
+  top: 4px;
+  left: 24px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 9px;
+  padding: 0 5px;
+  cursor: pointer;
+}
 
 .header-shop-name {
   font-family: var(--title-font);

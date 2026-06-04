@@ -1,10 +1,14 @@
 <template>
   <div class="admin-page" v-if="authed">
-    <!-- 分享与导出 -->
+    <!-- 订单管理 / 分享与导出 -->
     <section class="admin-section">
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" style="flex:1" @click="showShare = true">📱 {{ t('share') }}</button>
-        <button class="btn btn-outline" style="flex:1" @click="showExportOptions = true">📸 {{ t('export') }}</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary admin-top-btn" @click="goOrders">
+          订单管理
+          <span v-if="pendingBadge > 0" class="order-badge">{{ pendingBadge }}</span>
+        </button>
+        <button class="btn btn-primary admin-top-btn" @click="showShare = true">📱 {{ t('share') }}</button>
+        <button class="btn btn-outline admin-top-btn" @click="showExportOptions = true">📸 {{ t('export') }}</button>
       </div>
     </section>
 
@@ -236,6 +240,8 @@ import { useI18n } from '../composables/useI18n'
 import { useMenuData } from '../composables/useMenuData'
 import { useTheme } from '../composables/useTheme'
 import { useCloudinary } from '../composables/useCloudinary'
+import { useOrders } from '../composables/useOrders'
+import { useAlertSound } from '../composables/useAlertSound'
 
 const router = useRouter()
 const { t, tName, langOptions } = useI18n()
@@ -248,8 +254,11 @@ const {
   addItem, updateItem, deleteItem,
   exportJSON, importJSON
 } = useMenuData()
+const { getPendingCount } = useOrders()
+const { activate: activateSound, playAlert } = useAlertSound()
 
 const authed = ref(false)
+const pendingBadge = ref(0)
 const data = ref(null)
 const contacts = reactive({
   wechat: { url: '', name: '' },
@@ -734,6 +743,25 @@ function onOpenShopNameEditor() {
   showShopNameEditor.value = true
 }
 
+function goOrders() {
+  activateSound()
+  router.push('/admin/orders')
+}
+
+async function updateBadge() {
+  try {
+    const count = await getPendingCount()
+    if (count !== pendingBadge.value) {
+      if (pendingBadge.value > 0 && count > pendingBadge.value) {
+        playAlert()
+      }
+      pendingBadge.value = count
+    }
+  } catch (e) { /* ignore */ }
+}
+
+let badgeTimer = null
+
 onMounted(() => {
   const loggedIn = sessionStorage.getItem('ribuluo_admin_auth')
   if (!loggedIn) {
@@ -743,10 +771,14 @@ onMounted(() => {
   authed.value = true
   refreshData()
   window.addEventListener('open-shop-name-editor', onOpenShopNameEditor)
+  // 初始加载 + 5秒轮询
+  updateBadge()
+  badgeTimer = setInterval(updateBadge, 5000)
 })
 
 onUnmounted(() => {
   window.removeEventListener('open-shop-name-editor', onOpenShopNameEditor)
+  if (badgeTimer) clearInterval(badgeTimer)
 })
 
 // 响应式同步数据（解决异步加载时序问题）
@@ -766,6 +798,23 @@ watch(() => getMenuData(), (menuData) => {
 
 <style scoped>
 .admin-page { padding: 16px; padding-bottom: 40px; }
+
+.admin-top-btn {
+  flex: 1; position: relative; font-size: 13px; white-space: nowrap; min-width: 0;
+}
+.order-badge {
+  position: absolute; top: -6px; right: -4px;
+  min-width: 18px; height: 18px; line-height: 18px;
+  text-align: center; font-size: 10px; font-weight: 700;
+  background: var(--danger); color: #fff; border-radius: 9px;
+  padding: 0 5px;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
 .admin-section {
   background: var(--bg-card); border-radius: 12px;
   padding: 16px; margin-bottom: 16px;
