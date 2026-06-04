@@ -85,7 +85,7 @@ function removeItem(productId) {
   _saveCart()
 }
 
-function setItemQty(productId, qty) {
+function setItemQty(productId, qty, productInfo) {
   const cart = _readCart()
   const q = Math.max(0, Math.min(qty, 999))
   if (q === 0) {
@@ -94,6 +94,13 @@ function setItemQty(productId, qty) {
     const existing = cart.items.find(i => i.id === productId)
     if (existing) {
       existing.qty = q
+    } else if (productInfo) {
+      cart.items.push({
+        id: productId,
+        name: productInfo.name,
+        price: productInfo.price,
+        qty: q
+      })
     }
   }
   _saveCart()

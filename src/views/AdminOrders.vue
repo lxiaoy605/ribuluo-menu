@@ -265,7 +265,7 @@ const router = useRouter()
 const { t } = useI18n()
 const { searchOrders, getOrderStats, getStatsByMonth, getStatsByDay, updateOrderById, deleteOrder, getPendingCount } = useOrders()
 const { getMenuData } = useMenuData()
-const { playAlert } = useAlertSound()
+const { playAlert, activate } = useAlertSound()
 
 // 统计
 const stats = reactive({ todayPending: 0, todayCompleted: 0, todayAmount: 0, monthCount: 0, monthAmount: 0, yearCount: 0, yearAmount: 0 })
@@ -590,7 +590,7 @@ function yandexGoUrl(address) {
 }
 
 function ggUrl(address) {
-  return 'intent://#Intent;package=am.ggtaxi.main;end'
+  return 'intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=am.ggtaxi.main;end'
 }
 
 function copyText(text) {
@@ -608,20 +608,19 @@ let lastPending = 0
 
 onMounted(async () => {
   await loadStats()
-  lastPending = stats.todayPending
+  lastPending = await getPendingCount()
   await loadOrders()
+  // 激活提示音
+  activate()
 
   statsTimer = setInterval(async () => {
     try {
       const count = await getPendingCount()
-      // 更新统计栏
       await loadStats()
-      // 检测 pending 数量变化
       if (count !== lastPending) {
         lastPending = count
         if (activeTab.value === 'pending') {
           pendingTotal.value = count
-          // 总数变了但当前页不一定对，重新加载当前页
         }
         playAlert()
       }
