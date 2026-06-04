@@ -355,6 +355,6 @@ watch(sortedCategories, (cats) => {
   color: var(--accent);
   background: rgba(212, 175, 55, 0.1);
 }
-.nav-icon { font-size: 18px; }
-.nav-label { font-size: 11px; }
+.nav-icon { font-size: 20px; }
+.nav-label { font-size: 14px; font-weight: 600; }
 </style>

@@ -160,6 +160,7 @@
           <label class="form-label">{{ t('image') }}</label>
           <input type="file" accept="image/*" @change="onImageUpload" class="form-input" :disabled="uploading" />
           <p v-if="uploading" style="color:var(--accent);font-size:12px;margin-top:4px">⏳ 上传中...</p>
+          <p style="color:var(--text-secondary);font-size:11px;margin-top:4px">图片最大限制5M，仅支持 JPG/PNG/WebP</p>
           <div v-if="itemForm.image" style="margin-top:8px">
             <img :src="itemForm.image" style="max-width:150px;border-radius:8px" />
             <button class="btn btn-sm btn-danger" style="margin-left:8px" @click="itemForm.image = ''">移除</button>

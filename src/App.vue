@@ -23,6 +23,7 @@
             <option v-for="th in themeOptions" :key="th.id" :value="th.id">{{ tName(th.name) }}</option>
           </select>
           <button class="btn-admin-link" @click="onEditShopName">✏️ {{ t('editShopName') }}</button>
+          <button class="btn-admin-link" @click="showPwdModal = true">🔑 重置密码</button>
         </template>
       </div>
     </div>
@@ -39,6 +40,31 @@
       </div>
     </div>
 
+    <!-- 重置密码弹窗 -->
+    <div v-if="showPwdModal" class="modal-overlay" @click.self="showPwdModal = false">
+      <div class="modal-content">
+        <h3 class="modal-title">重置密码</h3>
+        <div class="form-group">
+          <label class="form-label">旧密码</label>
+          <input v-model="pwdForm.old" type="password" class="form-input" placeholder="输入旧密码" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">新密码</label>
+          <input v-model="pwdForm.new1" type="password" class="form-input" placeholder="输入新密码" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认新密码</label>
+          <input v-model="pwdForm.new2" type="password" class="form-input" placeholder="再次输入新密码" />
+        </div>
+        <p v-if="pwdError" style="color:var(--danger);font-size:13px;margin-bottom:8px">{{ pwdError }}</p>
+        <p v-if="pwdSuccess" style="color:var(--success);font-size:13px;margin-bottom:8px">{{ pwdSuccess }}</p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="closePwdModal">{{ t('cancel') }}</button>
+          <button class="btn btn-primary" @click="doResetPassword">确认重置</button>
+        </div>
+      </div>
+    </div>
+
     <main class="app-main">
       <router-view />
     </main>
@@ -46,7 +72,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from './composables/useI18n'
 import { useTheme } from './composables/useTheme'
@@ -56,13 +82,19 @@ import { defaultMenu } from './data/defaultMenu'
 const route = useRoute()
 const { t, tName, currentLang, setLang, initLang, langOptions } = useI18n()
 const { currentTheme, applyTheme, initTheme, themeOptions } = useTheme()
-const { getMenuData, initDefaultData } = useMenuData()
+const { getMenuData, initDefaultData, verifyPassword, hashPassword, setMenuData } = useMenuData()
 
 const isLogin = computed(() => route.path === '/admin' || route.path === '/admin/')
 const isAdmin = computed(() => route.path.startsWith('/admin'))
 
 const showThemeConfirm = ref(false)
 const pendingTheme = ref('')
+
+// 密码重置
+const showPwdModal = ref(false)
+const pwdError = ref('')
+const pwdSuccess = ref('')
+const pwdForm = reactive({ old: '', new1: '', new2: '' })
 
 const shopNameComputed = computed(() => {
   const d = getMenuData()
@@ -92,6 +124,35 @@ function cancelThemeChange() {
 
 function onEditShopName() {
   window.dispatchEvent(new CustomEvent('open-shop-name-editor'))
+}
+
+function closePwdModal() {
+  showPwdModal.value = false
+  pwdError.value = ''
+  pwdSuccess.value = ''
+  pwdForm.old = ''
+  pwdForm.new1 = ''
+  pwdForm.new2 = ''
+}
+
+async function doResetPassword() {
+  pwdError.value = ''
+  pwdSuccess.value = ''
+  if (!pwdForm.old) { pwdError.value = '请输入旧密码'; return }
+  if (!pwdForm.new1 || pwdForm.new1.length < 4) { pwdError.value = '新密码至少4位'; return }
+  if (pwdForm.new1 !== pwdForm.new2) { pwdError.value = '两次新密码不一致'; return }
+
+  const d = getMenuData()
+  if (!d) { pwdError.value = '数据加载失败，请刷新后重试'; return }
+
+  const ok = await verifyPassword(pwdForm.old, d.passwordHash)
+  if (!ok) { pwdError.value = '旧密码错误'; return }
+
+  const newHash = await hashPassword(pwdForm.new1)
+  d.passwordHash = newHash
+  await setMenuData(d)
+  pwdSuccess.value = '密码重置成功'
+  setTimeout(() => closePwdModal(), 1500)
 }
 
 onMounted(async () => {
