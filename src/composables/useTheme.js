@@ -167,7 +167,14 @@ export function useTheme() {
   }
 
   function initTheme() {
-    const data = getMenuData()
+    let data = getMenuData()
+    // 缓存为空时先从 localStorage 同步读取，避免页面闪烁默认主题
+    if (!data) {
+      try {
+        const raw = localStorage.getItem('ribuluo_menu_data')
+        if (raw) data = JSON.parse(raw)
+      } catch(e) { /* ignore */ }
+    }
     const themeId = data?.theme || 'bbq-red-gold'
     applyTheme(themeId)
   }

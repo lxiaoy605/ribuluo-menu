@@ -70,10 +70,10 @@
         <h4 class="contact-title">欢迎联系</h4>
         <div class="contact-qr-row">
           <div v-for="c in contactList" :key="c.key" class="qr-item">
-            <img :src="c.url" @click="saveQrImage(c.url, c.name || c.key)" title="点击保存图片" />
+            <img :src="c.url" title="二维码" />
             <div class="qr-name-row">
               <span class="qr-name">{{ c.name || c.key }}</span>
-              <span v-if="c.name" class="qr-copy" @click.stop="copyText(c.name)" title="复制账号">📋</span>
+              <span class="qr-copy" @click.stop="saveQrImage(c.url, c.name || c.key)" title="下载图片">⬇</span>
             </div>
           </div>
         </div>

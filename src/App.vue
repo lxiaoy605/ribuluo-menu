@@ -162,8 +162,9 @@ async function doResetPassword() {
 }
 
 onMounted(async () => {
+  initTheme() // 立即从 localStorage 应用主题，避免闪烁
   await initDefaultData(defaultMenu)
-  initTheme()
+  initTheme() // 用服务器数据更新
   initLang()
 })
 </script>
