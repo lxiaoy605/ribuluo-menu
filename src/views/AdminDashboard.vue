@@ -324,7 +324,7 @@ const PAGE_H = 2048
 const PAGE_W = 1456
 const PAGE_PAD = 80
 const ROW_H = 58
-const ROW_H_IMG = 96
+const ROW_H_IMG = 136
 const SUB_H = 70
 const CAT_H = 80
 const TITLE_H = 100  // 标题占用高度（52px字体 + 20px下边距 + 上下留白）
@@ -619,13 +619,13 @@ function buildPage(pageIdx, pageData, lang) {
         if (!itemName) return
         const row = document.createElement('div')
         const hasImg = !!item.image
-        row.style.cssText = `display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid ${theme.css['--border']};min-height:${hasImg ? '92px' : '50px'}`
+        row.style.cssText = `display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid ${theme.css['--border']};min-height:${hasImg ? '130px' : '50px'}`
 
         if (hasImg) {
           // ---------- 有图菜品：图片 + 双行文字 ----------
           const img = document.createElement('img')
           img.src = item.image
-          img.style.cssText = `width:80px;height:80px;object-fit:cover;border-radius:8px;border:3px solid ${theme.css['--border']};flex-shrink:0`
+          img.style.cssText = `width:180px;height:120px;object-fit:cover;border-radius:8px;border:3px solid ${theme.css['--border']};flex-shrink:0`
           row.appendChild(img)
 
           const textCol = document.createElement('div')
