@@ -201,15 +201,17 @@ function getCatItems(cat, catIdx) {
     let all = []
     for (const sub of (cat.children || [])) {
       const filtered = (sub.items || []).filter(p =>
-        tName(p.name).toLowerCase().includes(q) ||
-        p.price.toString().includes(q)
+        !p.soldOut && (
+          tName(p.name).toLowerCase().includes(q) ||
+          p.price.toString().includes(q)
+        )
       )
       all = all.concat(filtered)
     }
     return all
   }
   const sub = (cat.children || []).find(s => s.id === activeSubId.value)
-  return sub ? (sub.items || []) : []
+  return sub ? (sub.items || []).filter(p => !p.soldOut) : []
 }
 
 function formatPrice(price) {
