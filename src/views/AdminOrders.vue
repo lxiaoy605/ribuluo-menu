@@ -602,8 +602,7 @@ function yandexGoUrl(address) {
 }
 
 function ggUrl(address) {
-  // GG 不支持 intent:// 直开，尝试通过官网域名唤起（若 App 注册了 Android App Links 则会直开）
-  return 'https://www.team.gg'
+  return 'https://play.google.com/store/apps/details?id=am.ggtaxi.main'
 }
 
 function copyText(text) {
@@ -656,7 +655,7 @@ onUnmounted(() => {
 .ao-title { font-size: 17px; font-weight: 600; }
 
 /* 统计栏 */
-.stats-bar { padding: 10px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.8; margin-bottom: 8px; }
+.stats-bar { padding: 10px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 2.2; margin-bottom: 8px; }
 .stats-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .stats-label { color: var(--text-secondary); flex-shrink: 0; }
 .stats-group { display: flex; gap: 12px; flex: 1; justify-content: space-around; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; }
@@ -665,7 +664,7 @@ onUnmounted(() => {
 .stats-detail-link { font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline; flex-shrink: 0; }
 
 /* 订单内容区块 */
-.ao-content-block { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--bg-primary); border-radius: 8px 8px 0 0; overflow: hidden; }
+.ao-content-block { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--bg-primary); border-radius: 8px 8px 0 0; overflow: hidden; border: 1px solid rgba(212,175,55,0.25); }
 
 /* 搜索区 */
 .search-area { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-secondary); }
@@ -679,7 +678,7 @@ onUnmounted(() => {
 .ao-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
 /* 列表 */
-.order-list { flex: 1; overflow-y: auto; padding: 8px; }
+.order-list { flex: 1; overflow-y: auto; padding: 10px; }
 .order-card { background: var(--bg-secondary); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
 .oc-summary { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; gap: 10px; }
 .ocs-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; justify-content: space-between; }
