@@ -179,22 +179,20 @@
         <div v-for="order in filteredHistory" :key="order.id" class="history-card">
           <!-- 摘要行 -->
           <div class="history-summary" @click="toggleExpand(order.id)">
-            <div class="hs-main">
-              <span class="hs-id">{{ order.id }}</span>
-              <span class="hs-badge" :class="order.order_mode === 'delivery' ? 'badge-delivery' : 'badge-dinein'">
-                {{ order.order_mode === 'delivery' ? t('delivery') : t('dineIn') }}
-              </span>
-              <span class="hs-time">{{ fmtTime(order.created_at) }}</span>
-              <span class="hs-amount">֏ {{ (order.total_amount || 0).toLocaleString() }}</span>
-            </div>
-            <div class="hs-actions">
-              <span class="hs-expand">{{ expandedIds.has(order.id) ? t('collapse') : t('expand') }}</span>
+            <span class="hs-id">{{ order.id }}</span>
+            <span class="hs-badge" :class="order.order_mode === 'delivery' ? 'badge-delivery' : 'badge-dinein'">
+              {{ order.order_mode === 'delivery' ? t('delivery') : t('dineIn') }}
+            </span>
+            <span class="hs-time">{{ fmtTime(order.created_at) }}</span>
+            <span class="hs-amount">֏ {{ (order.total_amount || 0).toLocaleString() }}</span>
+            <span class="hs-expand">{{ expandedIds.has(order.id) ? t('collapse') : t('expand') }}</span>
+            <span class="hs-modify">
               <button
                 v-if="order.status === 'pending'"
                 class="btn btn-sm btn-outline"
                 @click.stop="handleModify(order)"
               >{{ t('modify') }}</button>
-            </div>
+            </span>
           </div>
 
           <!-- 展开详情 -->
@@ -696,50 +694,55 @@ onMounted(() => {
 
 .history-summary {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
   padding: 10px 12px;
   cursor: pointer;
 }
-.hs-main {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-  justify-content: space-between;
-}
 .hs-id {
+  flex: 1.4;
   font-size: 13px;
   font-weight: 700;
   color: var(--accent);
   font-family: monospace;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .hs-badge {
+  flex: 0.8;
   font-size: 10px;
   padding: 1px 6px;
   border-radius: 3px;
+  white-space: nowrap;
 }
 .badge-dinein { background: var(--accent); color: var(--badge-text, #2B1600); }
 .badge-delivery { background: var(--danger); color: #fff; }
 .hs-time {
+  flex: 1.3;
   font-size: 11px;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 .hs-amount {
+  flex: 1;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-price);
-}
-.hs-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
 }
 .hs-expand {
+  flex: 0.7;
   font-size: 12px;
   color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+.hs-modify {
+  flex: 0.7;
+  display: flex;
+  justify-content: center;
 }
 
 /* 展开详情 */
