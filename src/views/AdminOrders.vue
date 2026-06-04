@@ -681,8 +681,8 @@ onUnmounted(() => {
 /* 列表 */
 .order-list { flex: 1; overflow-y: auto; padding: 8px; }
 .order-card { background: var(--bg-secondary); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
-.oc-summary { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; }
-.ocs-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; justify-content: space-between; }
+.oc-summary { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; gap: 10px; }
+.ocs-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; justify-content: space-between; }
 .ocs-id { font-size: 12px; font-weight: 700; color: var(--accent); font-family: monospace; }
 .ocs-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; }
 .badge-dine { background: var(--accent); color: var(--badge-text, #2B1600); }
