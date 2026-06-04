@@ -242,6 +242,54 @@
 
 **构建验证**：`npm run build` 零报错
 
+### 2026-06-04 三项关键 Bug 修复
+
+**GG 出租车深链接修正** (`src/views/AdminOrders.vue`)
+- 原 `intent://#Intent;package=am.ggtaxi.main;end` 缺少 action/category，导致 Chrome 先跳 Google Play
+- 修正为 `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=am.ggtaxi.main;end`，直接拉起 App 启动页
+
+**手动输入新菜品修复** (`src/composables/useCart.js` + `src/views/MenuView.vue`)
+- `setItemQty()` 新增可选 `productInfo` 参数，购物车中不存在时自动创建条目
+- `onQtyInput()` 改传完整 product 对象：`setItemQty(p.id, val, { name: p.name, price: p.price })`
+
+**管理端新订单提示音修复** (`src/views/AdminOrders.vue`)
+- `lastPending` 初始化从 `stats.todayPending` 改为 `await getPendingCount()`，避免指标不一致导致第一轮轮询误判
+- `onMounted` 中调用 `activate()` 解锁 Web Audio API AudioContext
+
+**Git 提交**：`fix: GG直开+手动输入新菜品修复+管理端提示音修复`
+
+### 2026-06-04 管理端计数同步 + 详情样式修复
+
+**页签计数同步** (`src/views/AdminOrders.vue`)
+- 新增 `refreshCounts()` 函数：并行查询 pending/completed 两个状态的计数
+- 完成结算/撤回/删除操作后调用 `refreshCounts()`，确保两个页签数字同步刷新
+
+**订单详情视觉区分**
+- `.oc-detail` 添加 `border: 1px solid var(--border)` + `border-radius: 8px` + `box-shadow: 0 2px 8px rgba(0,0,0,0.3)` + `margin: 0 8px 8px`，与卡片背景明确分离
+
+**Git 提交**：`fix: 完成结算后刷新全部页签计数 + 订单详情加边框阴影`
+
+### 2026-06-04 管理端刷新闪烁修复
+
+**问题**：在 `/admin/dashboard` 或 `/admin/orders` 刷新页面时，`authed` ref 初始为 `false`，异步组件加载期间短暂显示用户端菜单页，然后才切回管理端。
+
+**修复** (`src/router/index.js`)：
+- 管理端路由添加 `meta: { requiresAuth: true }`
+- 新增 `router.beforeEach` 同步守卫，在路由组件加载前检查 `sessionStorage.getItem('ribuluo_admin_auth')`
+- 未认证直接重定向 `/admin`，阻止异步组件加载，消除闪烁
+
+**Git 提交**：`fix: 路由守卫防止管理端页面刷新时闪烁用户端页面`
+
+### 2026-06-04 海报样式修复
+
+**有图片菜品去掉下边框** (`src/views/AdminDashboard.vue` → `buildPage()`)
+- 菜品行的 `border-bottom` 改为仅无图菜品显示，有图菜品不画分隔线
+
+**红金烧烤主题海报内容区修正**
+- 红金主题背景图自带装饰边框，加 80px padding 后视觉边距达到 ~185px（其他主题 ~45px）
+- 新增 `PAGE_PAD_BBQ = 45`，红金主题在 `buildPage()` 和 `paginate()` 中使用此值
+- 不影响其他主题的排版
+
 ## 下一步
 
 1. ❗ 用户在 Supabase SQL Editor 中执行 `supabase/orders_v2_migration.sql`（包含 delivery_fee 字段）

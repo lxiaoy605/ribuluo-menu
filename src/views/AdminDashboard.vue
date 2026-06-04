@@ -323,6 +323,7 @@ const sortedCategories = computed(() => categories.value.slice().sort((a, b) => 
 const PAGE_H = 2048
 const PAGE_W = 1456
 const PAGE_PAD = 80
+const PAGE_PAD_BBQ = 45  // 红金主题背景图自带装饰边框，需减小 padding 避免内容区过窄
 const ROW_H = 58
 const ROW_H_IMG = 136
 const SUB_H = 70
@@ -563,6 +564,7 @@ function tNameForLang(nameObj, lang) {
 
 function buildPage(pageIdx, pageData, lang) {
   const theme = getTheme()
+  const pad = theme.id === 'bbq-red-gold' ? PAGE_PAD_BBQ : PAGE_PAD
   const page = document.createElement('div')
   page.style.cssText = `width:${PAGE_W}px;height:${PAGE_H}px;position:relative;overflow:hidden;font-family:${theme.fonts.body}`
 
@@ -572,7 +574,7 @@ function buildPage(pageIdx, pageData, lang) {
   page.appendChild(bg)
 
   const content = document.createElement('div')
-  content.style.cssText = `position:relative;z-index:1;padding:${PAGE_PAD}px;height:100%;display:flex;flex-direction:column`
+  content.style.cssText = `position:relative;z-index:1;padding:${pad}px;height:100%;display:flex;flex-direction:column`
   page.appendChild(content)
 
   const title = document.createElement('div')
@@ -619,7 +621,7 @@ function buildPage(pageIdx, pageData, lang) {
         if (!itemName) return
         const row = document.createElement('div')
         const hasImg = !!item.image
-        row.style.cssText = `display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid ${theme.css['--border']};min-height:${hasImg ? '130px' : '50px'}`
+        row.style.cssText = `display:flex;align-items:center;gap:10px;padding:5px 0;${hasImg ? '' : `border-bottom:1px solid ${theme.css['--border']};`}min-height:${hasImg ? '130px' : '50px'}`
 
         if (hasImg) {
           // ---------- 有图菜品：图片 + 双行文字 ----------
@@ -715,7 +717,9 @@ function paginate() {
   let curPage = []
   const qrContacts = data.value?.contacts || {}
   const hasQr = qrContacts.wechat?.url || qrContacts.whatsapp?.url || qrContacts.telegram?.url
-  const bgH = PAGE_H - PAGE_PAD * 2 - TITLE_H - (hasQr ? QR_H : 0)
+  const theme = getTheme()
+  const pad = theme.id === 'bbq-red-gold' ? PAGE_PAD_BBQ : PAGE_PAD
+  const bgH = PAGE_H - pad * 2 - TITLE_H - (hasQr ? QR_H : 0)
   let curH = 0
   let lastCatId = null
 
