@@ -408,6 +408,10 @@ async function closeSuccess() {
   await nextTick()
   activeTab.value = 'history'
   loadHistory()
+  // 滚回顶部确保页签可见
+  const el = document.querySelector('.cart-view')
+  if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' })
+  window.scrollTo({ top: 0, behavior: 'instant' })
 }
 
 // 修改历史订单
