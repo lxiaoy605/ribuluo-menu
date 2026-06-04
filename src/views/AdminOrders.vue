@@ -602,7 +602,8 @@ function yandexGoUrl(address) {
 }
 
 function ggUrl(address) {
-  return 'intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=am.ggtaxi.main;end'
+  // GG 不支持 intent:// 直开，尝试通过官网域名唤起（若 App 注册了 Android App Links 则会直开）
+  return 'https://www.team.gg'
 }
 
 function copyText(text) {
@@ -622,6 +623,7 @@ onMounted(async () => {
   await loadStats()
   lastPending = await getPendingCount()
   await loadOrders()
+  await refreshCounts()
   // 激活提示音
   activate()
 
