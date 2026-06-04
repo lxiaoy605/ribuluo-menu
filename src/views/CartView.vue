@@ -19,7 +19,6 @@
       <!-- 空状态 -->
       <div v-if="!hasItems() && !editingOrderId" class="empty-state">
         <p class="empty-text">{{ t('noOrder') }}</p>
-        <button class="btn btn-primary" @click="$router.push('/')">{{ t('orderDishes') }}</button>
       </div>
 
       <template v-else>
@@ -277,7 +276,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useCart } from '../composables/useCart'
@@ -392,10 +391,13 @@ function copyOrderId() {
   }).catch(() => {})
 }
 
-function closeSuccess() {
+async function closeSuccess() {
   showSuccessModal.value = false
   submittedOrderId.value = ''
   copyMsg.value = ''
+  await nextTick()
+  activeTab.value = 'history'
+  loadHistory()
 }
 
 // 修改历史订单

@@ -6,7 +6,7 @@
         <button v-if="isCart" class="btn-back-header" @click="goMenu">← {{ t('back') }}</button>
         <button v-else class="btn-cart-header" @click="goCart">
           🛒
-          <span v-if="itemCount > 0" class="cart-badge">{{ itemCount }}</span>
+          <span v-if="itemCount > 0" class="cart-badge" :class="{ 'cart-badge-pulse': itemCount > 0 }">{{ itemCount }}</span>
         </button>
       </div>
       <!-- 客户页面：店名居中 -->
@@ -309,6 +309,13 @@ body {
   color: #fff;
   border-radius: 9px;
   padding: 0 5px;
+}
+.cart-badge-pulse {
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { background: var(--danger); box-shadow: 0 0 0 0 rgba(212,175,55,0.6); }
+  50% { background: var(--accent); box-shadow: 0 0 8px 2px rgba(212,175,55,0.6); color: var(--badge-text, #2B1600); }
 }
 
 .header-shop-name {

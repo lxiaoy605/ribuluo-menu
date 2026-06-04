@@ -64,7 +64,7 @@
                       <span class="item-price">{{ formatPrice(p.price) }}</span>
                       <div class="qty-ctrl">
                         <button class="qty-btn" :disabled="getItemQty(p.id)===0" @click="removeItem(p.id)">−</button>
-                        <input class="qty-input" :value="getItemQty(p.id)" @input="e => onQtyInput(p.id, e)" inputmode="numeric" />
+                        <input class="qty-input" :value="getItemQty(p.id)" @change="e => onQtyInput(p.id, e)" inputmode="numeric" />
                         <button class="qty-btn" :disabled="getItemQty(p.id)>=999" @click="addItem(p)">+</button>
                       </div>
                     </div>
@@ -79,7 +79,7 @@
                   <div class="qty-wrap">
                     <div class="qty-ctrl">
                       <button class="qty-btn" :disabled="getItemQty(p.id)===0" @click="removeItem(p.id)">−</button>
-                      <input class="qty-input" :value="getItemQty(p.id)" @input="e => onQtyInput(p.id, e)" inputmode="numeric" />
+                      <input class="qty-input" :value="getItemQty(p.id)" @change="e => onQtyInput(p.id, e)" inputmode="numeric" />
                       <button class="qty-btn" :disabled="getItemQty(p.id)>=999" @click="addItem(p)">+</button>
                     </div>
                   </div>
@@ -225,13 +225,15 @@ function copyName(p) {
 }
 
 function onQtyInput(productId, event) {
-  const raw = event.target.value
+  const raw = event.target.value.trim()
   if (raw === '') {
     setItemQty(productId, 0)
     return
   }
+  // 仅允许纯数字整数（禁止小数、负数、特殊字符）
+  if (!/^\d+$/.test(raw)) return
   const val = parseInt(raw, 10)
-  if (isNaN(val)) return
+  if (val > 999) return
   setItemQty(productId, val)
 }
 

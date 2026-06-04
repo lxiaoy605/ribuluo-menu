@@ -201,6 +201,24 @@
 
 **构建验证**：`npm run build` 零报错
 
+### 2026-06-04 用户端交互细节修复
+
+**购物车脚标脉冲动画** (`src/App.vue`)
+- 脚标 >0 时增加 `cart-badge-pulse` 动画（黄/红交替闪烁 + 发光，1.5s 循环）
+- 与联系方式悬浮气泡风格一致
+
+**数量输入框交互修复** (`src/views/MenuView.vue`)
+- `@input` → `@change`：仅在失去焦点时更新购物车数据
+- 严格正则校验 `/^\d+$/`：禁止小数（5.5）、负数（-3）、特殊字符（1-3）
+- 上限 999，超限忽略
+
+**购物车页面细节** (`src/views/CartView.vue`)
+- 空状态移除"加菜"按钮（顶栏已有返回按钮，避免冗余）
+- 提交成功后自动切换到"历史预订"tab（`nextTick` 确保 DOM 更新后切换）
+- 修复成功弹窗关闭后 tab 页签可能不显示的问题
+
+**Git 提交**：`fix: 购物车脚标脉冲动画+数量输入框blur更新+提交后跳转历史`
+
 ## 下一步
 
 1. ❗ 用户在 Supabase SQL Editor 中执行 `supabase/orders_v2_migration.sql`（包含 delivery_fee 字段）
