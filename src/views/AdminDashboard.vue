@@ -301,6 +301,7 @@ const ROW_H = 58
 const SUB_H = 70
 const CAT_H = 80
 const TITLE_H = 100  // 标题占用高度（52px字体 + 20px下边距 + 上下留白）
+const QR_H = 150     // 底部联系方式占用高度（120px图片 + 30px上下间距）
 
 const pageCount = computed(() => {
   return Math.max(1, paginate().length)
@@ -562,13 +563,32 @@ function buildPage(pageIdx, pageData) {
   }
 
   content.appendChild(inner)
+
+  // 底部联系方式二维码
+  const qrContacts = data.value?.contacts || {}
+  const qrKeys = ['wechat', 'whatsapp', 'telegram']
+  const qrUrls = qrKeys.map(k => qrContacts[k]).filter(Boolean)
+  if (qrUrls.length > 0) {
+    const qrBar = document.createElement('div')
+    qrBar.style.cssText = `display:flex;justify-content:center;gap:40px;padding-top:16px;flex-shrink:0`
+    qrUrls.forEach(url => {
+      const img = document.createElement('img')
+      img.src = url
+      img.style.cssText = 'width:120px;height:120px;border-radius:8px;object-fit:cover;border:2px solid ' + theme.css['--border']
+      qrBar.appendChild(img)
+    })
+    content.appendChild(qrBar)
+  }
+
   return page
 }
 
 function paginate() {
   const pages = []
   let curPage = []
-  const bgH = PAGE_H - PAGE_PAD * 2 - TITLE_H
+  const qrContacts = data.value?.contacts || {}
+  const hasQr = qrContacts.wechat || qrContacts.whatsapp || qrContacts.telegram
+  const bgH = PAGE_H - PAGE_PAD * 2 - TITLE_H - (hasQr ? QR_H : 0)
   let curH = 0
   let lastCatId = null
 

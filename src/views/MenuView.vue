@@ -59,6 +59,33 @@
       </div>
     </div>
 
+    <!-- 联系方式悬浮气泡 -->
+    <div class="contact-bubble" :class="{ active: showContacts }" @click="showContacts = !showContacts">
+      <span class="bubble-icon">💬</span>
+    </div>
+
+    <!-- 联系方式弹窗 -->
+    <div v-if="showContacts" class="contact-panel" @click.self="showContacts = false">
+      <div class="contact-panel-inner">
+        <h4 class="contact-title">欢迎联系</h4>
+        <div class="contact-qr-row">
+          <div v-if="contacts.wechat" class="qr-item">
+            <img :src="contacts.wechat" />
+            <span>微信</span>
+          </div>
+          <div v-if="contacts.whatsapp" class="qr-item">
+            <img :src="contacts.whatsapp" />
+            <span>WhatsApp</span>
+          </div>
+          <div v-if="contacts.telegram" class="qr-item">
+            <img :src="contacts.telegram" />
+            <span>Telegram</span>
+          </div>
+        </div>
+        <p v-if="!contacts.wechat && !contacts.whatsapp && !contacts.telegram" style="color:var(--text-secondary);text-align:center;padding:20px">暂无联系方式</p>
+      </div>
+    </div>
+
     <!-- 底部固定一级分类导航 -->
     <div class="bottom-nav">
       <button
@@ -88,12 +115,14 @@ const { currentTheme, getTheme } = useTheme()
 const searchQuery = ref('')
 const activeCatIdx = ref(0)
 const activeSubId = ref('')
+const showContacts = ref(false)
 const swipeContainer = ref(null)
 const subTabsContainer = ref(null)
 
 const catIcons = ['🔥', '🍳', '🍲', '🍺', '🥤', '🍰', '🍜', '🥗']
 
 const data = computed(() => getMenuData() || { categories: [], shopName: {} })
+const contacts = computed(() => data.value.contacts || { wechat: '', whatsapp: '', telegram: '' })
 
 const sortedCategories = computed(() => {
   return (data.value.categories || []).slice().sort((a, b) => (a.sort || 0) - (b.sort || 0))
@@ -357,4 +386,83 @@ watch(sortedCategories, (cats) => {
 }
 .nav-icon { font-size: 20px; }
 .nav-label { font-size: 14px; font-weight: 600; }
+
+/* ===== 联系方式悬浮气泡 ===== */
+.contact-bubble {
+  position: fixed;
+  bottom: 90px;
+  right: calc(50% - 210px);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 99;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: bubble-pulse 2s ease-in-out infinite;
+}
+@media (max-width: 480px) {
+  .contact-bubble { right: 16px; }
+}
+.contact-bubble:active { transform: scale(0.9); }
+.contact-bubble.active { animation: none; }
+.bubble-icon { font-size: 22px; }
+
+@keyframes bubble-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+  50% { box-shadow: 0 4px 24px var(--accent); }
+}
+
+/* 联系方式弹窗 */
+.contact-panel {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.contact-panel-inner {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 420px;
+  border: 1px solid var(--border);
+}
+.contact-title {
+  text-align: center;
+  font-size: 20px;
+  color: var(--accent);
+  margin-bottom: 20px;
+  font-family: var(--title-font);
+}
+.contact-qr-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.qr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.qr-item img {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.qr-item span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
 </style>
