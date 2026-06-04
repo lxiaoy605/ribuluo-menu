@@ -240,7 +240,7 @@ body {
   backdrop-filter: blur(10px);
 }
 
-.header-left { display: flex; align-items: center; gap: 8px; position: relative; }
+.header-left { flex: 1; display: flex; align-items: center; gap: 8px; position: relative; }
 .cart-icon { font-size: 22px; cursor: pointer; }
 .cart-badge {
   position: absolute;
@@ -260,16 +260,17 @@ body {
 }
 
 .header-shop-name {
-  font-family: var(--title-font);
+  font-family: var(--title-font, "STKaiti", "KaiTi", "楷体", serif);
   font-size: 16px;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 3px;
   text-align: center;
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
-.header-right { display: flex; align-items: center; gap: 8px; }
+.header-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .header-right.scrollable {
   overflow-x: auto;
   flex-wrap: nowrap;
@@ -290,6 +291,18 @@ body {
   color: var(--text-primary);
   cursor: pointer;
   font-family: var(--body-font);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23D4AF37'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 20px;
+}
+.lang-switch:focus, .theme-switch:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .btn-admin-link {

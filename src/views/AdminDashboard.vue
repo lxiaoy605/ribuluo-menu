@@ -205,6 +205,12 @@
       <div class="modal-content">
         <h3 class="modal-title">导出菜单</h3>
         <p style="color:var(--text-secondary);margin-bottom:8px">分辨率 1456 × 2048</p>
+        <div class="form-group">
+          <label class="form-label">语言</label>
+          <select class="form-input" v-model="exportLang">
+            <option v-for="l in langOptions" :key="l.code" :value="l.code">{{ l.flag }} {{ l.label }}</option>
+          </select>
+        </div>
         <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">
           共 {{ pageCount }} 页，将导出 {{ pageCount }} 张图片
         </p>
@@ -292,6 +298,7 @@ const itemForm = reactive({
 const showShare = ref(false)
 const showExportOptions = ref(false)
 const exporting = ref(false)
+const exportLang = ref('zh')
 const qrContainer = ref(null)
 const qrCanvas = ref(null)
 const uploading = ref(false)
@@ -529,7 +536,13 @@ function handleImportData(e) {
 }
 
 // ========== 海报导出 ==========
-function buildPage(pageIdx, pageData) {
+function tNameForLang(nameObj, lang) {
+  if (!nameObj) return ''
+  if (typeof nameObj === 'string') return nameObj
+  return nameObj[lang] || nameObj['zh'] || ''
+}
+
+function buildPage(pageIdx, pageData, lang) {
   const theme = getTheme()
   const page = document.createElement('div')
   page.style.cssText = `width:${PAGE_W}px;height:${PAGE_H}px;position:relative;overflow:hidden;font-family:${theme.fonts.body}`
@@ -545,7 +558,7 @@ function buildPage(pageIdx, pageData) {
 
   const title = document.createElement('div')
   title.style.cssText = `text-align:center;font-size:52px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};margin-bottom:20px`
-  title.textContent = tName(data.value?.shopName)
+  title.textContent = tNameForLang(data.value?.shopName, lang)
   content.appendChild(title)
 
   const inner = document.createElement('div')
@@ -559,14 +572,14 @@ function buildPage(pageIdx, pageData) {
     if (cat.id !== lastCatId) {
       const catEl = document.createElement('div')
       catEl.style.cssText = `text-align:center;font-size:36px;font-weight:bold;color:${theme.css['--accent']};font-family:${theme.fonts.title};padding:8px 0;margin-top:${di > 0 ? '20px' : '0'}`
-      catEl.innerHTML = `━━━━━━ &nbsp;${tName(cat.name)}&nbsp; ━━━━━━`
+      catEl.innerHTML = `━━━━━━ &nbsp;${tNameForLang(cat.name, lang)}&nbsp; ━━━━━━`
       inner.appendChild(catEl)
       lastCatId = cat.id
     }
 
     const subEl = document.createElement('div')
     subEl.style.cssText = `text-align:center;font-size:28px;color:${theme.css['--text-primary']};padding:6px 12px;margin:6px auto;background:${theme.css['--tab-bg']};border:1px solid ${theme.css['--accent']};display:inline-block;width:auto`
-    subEl.textContent = tName(sub.name)
+    subEl.textContent = tNameForLang(sub.name, lang)
     const subWrap = document.createElement('div')
     subWrap.style.cssText = 'text-align:center'
     subWrap.appendChild(subEl)
@@ -581,11 +594,14 @@ function buildPage(pageIdx, pageData) {
       const colDiv = document.createElement('div')
       colDiv.style.cssText = 'flex:1'
       col.forEach(item => {
+        const itemName = tNameForLang(item.name, lang)
+        // 空翻译时跳过该菜品
+        if (!itemName) return
         const row = document.createElement('div')
         row.style.cssText = `display:flex;align-items:baseline;justify-content:space-between;padding:4px 0;border-bottom:1px solid ${theme.css['--border']}`
         const nameSpan = document.createElement('span')
         nameSpan.style.cssText = `font-size:22px;color:${theme.css['--text-primary']}`
-        nameSpan.textContent = (item.recommended ? '⭐' : '') + tName(item.name)
+        nameSpan.textContent = (item.recommended ? '⭐' : '') + itemName
         const priceSpan = document.createElement('span')
         priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap;margin-left:12px`
         priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
@@ -674,30 +690,31 @@ function paginate() {
 async function doExport() {
   exporting.value = true
   showExportOptions.value = false
+  const lang = exportLang.value
   await nextTick()
   try {
     const pages = paginate()
     if (!pages.length) { exporting.value = false; return }
-    await exportPNGs(pages)
+    await exportPNGs(pages, lang)
   } catch (e) {
     console.error('导出失败', e)
   }
   exporting.value = false
 }
 
-async function exportPNGs(pages) {
+async function exportPNGs(pages, lang) {
   const { default: html2canvas } = await import('html2canvas')
   const EXPORT_W = 1456
   const EXPORT_H = 2048
   const scale = Math.max(EXPORT_W / PAGE_W, EXPORT_H / PAGE_H)
   for (let i = 0; i < pages.length; i++) {
-    const pageEl = buildPage(i, pages[i])
+    const pageEl = buildPage(i, pages[i], lang)
     document.body.appendChild(pageEl)
     await nextTick()
     const canvas = await html2canvas(pageEl, { scale, useCORS: true, allowTaint: true, backgroundColor: null })
     document.body.removeChild(pageEl)
     const link = document.createElement('a')
-    link.download = '菜单_' + tName(data.value?.shopName || { zh: '菜单' }) + '_p' + (i + 1) + '.png'
+    link.download = '菜单_' + tNameForLang(data.value?.shopName || { zh: '菜单' }, lang) + '_p' + (i + 1) + '.png'
     link.href = canvas.toDataURL('image/png')
     link.click()
     if (i < pages.length - 1) await new Promise(r => setTimeout(r, 200))
