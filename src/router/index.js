@@ -14,6 +14,7 @@ const routes = [
   {
     path: '/admin/dashboard',
     name: 'admin-dashboard',
+    meta: { requiresAuth: true },
     component: () => import('../views/AdminDashboard.vue')
   },
   {
@@ -24,6 +25,7 @@ const routes = [
   {
     path: '/admin/orders',
     name: 'admin-orders',
+    meta: { requiresAuth: true },
     component: () => import('../views/AdminOrders.vue')
   }
 ]
@@ -31,6 +33,13 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes
+})
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth) {
+    const loggedIn = sessionStorage.getItem('ribuluo_admin_auth')
+    if (!loggedIn) return '/admin'
+  }
 })
 
 export default router
