@@ -197,6 +197,7 @@
 
           <!-- 展开详情 -->
           <div v-if="expandedIds.has(order.id)" class="history-detail">
+            <div class="hd-order-id" @click="copyText(order.id)">{{ order.id }} <span class="hd-copy-hint">📋</span></div>
             <table class="detail-table">
               <thead>
                 <tr><th>{{ t('name') }}</th><th>{{ t('qty') }}</th><th>{{ t('unitPrice') }}</th><th>{{ t('subtotal') }}</th></tr>
@@ -705,14 +706,12 @@ onMounted(() => {
   font-weight: 700;
   color: var(--accent);
   font-family: monospace;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hs-badge {
-  flex: 0.8;
+  flex: 0 0 auto;
   font-size: 10px;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 3px;
   white-space: nowrap;
 }
@@ -750,6 +749,13 @@ onMounted(() => {
   padding: 0 12px 12px;
   border-top: 1px solid var(--border);
 }
+.hd-order-id {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 0 4px;
+  font-size: 14px; font-weight: 700; font-family: monospace;
+  color: var(--accent); cursor: pointer; user-select: text;
+}
+.hd-copy-hint { font-size: 13px; }
 .detail-table {
   width: 100%;
   border-collapse: collapse;

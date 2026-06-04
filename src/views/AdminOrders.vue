@@ -79,6 +79,8 @@
 
         <!-- 展开详情（与用户端历史预订一致） -->
         <div v-if="expandedIds.has(order.id)" class="oc-detail">
+          <!-- 订单号（可复制） -->
+          <div class="ocd-order-id" @click="copyText(order.id)">{{ order.id }} <span class="ocd-copy-hint">📋</span></div>
           <!-- 操作按钮放顶部 -->
           <div class="ocd-actions">
             <button v-if="order.status === 'pending'" class="btn btn-sm btn-success" @click="confirmComplete(order)">✓ 完成结算</button>
@@ -706,7 +708,14 @@ onUnmounted(() => {
 .btn-expand:active { background: var(--accent); color: var(--badge-text, #2B1600); }
 
 .oc-detail { padding: 0 10px 10px; border-top: 1px solid var(--border); background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; margin: 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-.ocd-actions { display: flex; gap: 6px; padding: 8px 0; flex-wrap: wrap; }
+.ocd-order-id {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 0 4px;
+  font-size: 14px; font-weight: 700; font-family: monospace;
+  color: var(--accent); cursor: pointer; user-select: text;
+}
+.ocd-copy-hint { font-size: 13px; }
+.ocd-actions { display: flex; gap: 6px; padding: 4px 0 8px; flex-wrap: wrap; }
 
 /* 详情表格 */
 .detail-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 12px; }

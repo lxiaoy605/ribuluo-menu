@@ -323,7 +323,7 @@ const sortedCategories = computed(() => categories.value.slice().sort((a, b) => 
 const PAGE_H = 2048
 const PAGE_W = 1456
 const PAGE_PAD = 80
-const PAGE_PAD_BBQ = 45  // 红金主题背景图自带装饰边框，需减小 padding 避免内容区过窄
+const PAGE_PAD_BBQ = 185  // 红金主题背景图自带装饰边框，内容区约1090×1680，padding需避开边框
 const ROW_H = 58
 const ROW_H_IMG = 136
 const SUB_H = 70
