@@ -325,10 +325,30 @@ const PAGE_H = 2048
 const PAGE_W = 1456
 const PAGE_PAD = 80
 const ROW_H = 58
+const ROW_H_IMG = 96
 const SUB_H = 70
 const CAT_H = 80
 const TITLE_H = 100  // 标题占用高度（52px字体 + 20px下边距 + 上下留白）
 const QR_H = 150     // 底部联系方式占用高度（120px图片 + 30px上下间距）
+
+function getItemRowH(item) {
+  return item.image ? ROW_H_IMG : ROW_H
+}
+
+function calcBatchHeight(items) {
+  let h = 0
+  for (let i = 0; i < items.length; i += 2) {
+    const h1 = getItemRowH(items[i])
+    const h2 = i + 1 < items.length ? getItemRowH(items[i + 1]) : 0
+    h += Math.max(h1, h2)
+  }
+  return h
+}
+
+function getRecommendedText(lang) {
+  const map = { zh: '招牌推荐', am: 'Խորհուրդ', en: 'Recommended', ru: 'Рекомендуемое' }
+  return map[lang] || 'Recommended'
+}
 
 const pageCount = computed(() => {
   return Math.max(1, paginate().length)
@@ -590,6 +610,7 @@ function buildPage(pageIdx, pageData, lang) {
 
     const grid = document.createElement('div')
     grid.style.cssText = 'display:flex;gap:40px;margin-top:8px'
+    const recText = getRecommendedText(lang)
     cols.forEach(col => {
       const colDiv = document.createElement('div')
       colDiv.style.cssText = 'flex:1'
@@ -598,15 +619,62 @@ function buildPage(pageIdx, pageData, lang) {
         // 空翻译时跳过该菜品
         if (!itemName) return
         const row = document.createElement('div')
-        row.style.cssText = `display:flex;align-items:baseline;justify-content:space-between;padding:4px 0;border-bottom:1px solid ${theme.css['--border']}`
-        const nameSpan = document.createElement('span')
-        nameSpan.style.cssText = `font-size:22px;color:${theme.css['--text-primary']}`
-        nameSpan.textContent = (item.recommended ? '⭐' : '') + itemName
-        const priceSpan = document.createElement('span')
-        priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap;margin-left:12px`
-        priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
-        row.appendChild(nameSpan)
-        row.appendChild(priceSpan)
+        const hasImg = !!item.image
+        row.style.cssText = `display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid ${theme.css['--border']};min-height:${hasImg ? '92px' : '50px'}`
+
+        if (hasImg) {
+          // ---------- 有图菜品：图片 + 双行文字 ----------
+          const img = document.createElement('img')
+          img.src = item.image
+          img.style.cssText = `width:80px;height:80px;object-fit:cover;border-radius:8px;border:3px solid ${theme.css['--border']};flex-shrink:0`
+          row.appendChild(img)
+
+          const textCol = document.createElement('div')
+          textCol.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:5px;min-width:0'
+
+          const nameRow = document.createElement('div')
+          nameRow.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap'
+          const nameSpan = document.createElement('span')
+          nameSpan.style.cssText = `font-size:22px;color:${theme.css['--text-primary']}`
+          nameSpan.textContent = itemName
+          nameRow.appendChild(nameSpan)
+          if (item.recommended) {
+            const badge = document.createElement('span')
+            badge.style.cssText = `font-size:14px;background:${theme.css['--badge-rec']};color:${theme.css['--badge-text']};padding:1px 6px;border-radius:3px;white-space:nowrap`
+            badge.textContent = recText
+            nameRow.appendChild(badge)
+          }
+          textCol.appendChild(nameRow)
+
+          const priceSpan = document.createElement('span')
+          priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap`
+          priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
+          textCol.appendChild(priceSpan)
+
+          row.appendChild(textCol)
+        } else {
+          // ---------- 无图菜品：单行（名称+徽章 … 价格） ----------
+          const nameSpan = document.createElement('span')
+          nameSpan.style.cssText = `font-size:22px;color:${theme.css['--text-primary']}`
+          nameSpan.textContent = itemName
+          row.appendChild(nameSpan)
+
+          if (item.recommended) {
+            const badge = document.createElement('span')
+            badge.style.cssText = `font-size:14px;background:${theme.css['--badge-rec']};color:${theme.css['--badge-text']};padding:1px 6px;border-radius:3px;white-space:nowrap`
+            badge.textContent = recText
+            row.appendChild(badge)
+          }
+
+          const spacer = document.createElement('span')
+          spacer.style.cssText = 'flex:1'
+          row.appendChild(spacer)
+
+          const priceSpan = document.createElement('span')
+          priceSpan.style.cssText = `font-size:22px;font-weight:bold;color:${theme.css['--text-price']};white-space:nowrap;margin-left:10px`
+          priceSpan.textContent = item.price === 0 ? '时价' : '֏ ' + item.price.toLocaleString()
+          row.appendChild(priceSpan)
+        }
         colDiv.appendChild(row)
       })
       grid.appendChild(colDiv)
@@ -672,13 +740,19 @@ function paginate() {
         }
 
         const maxRows = Math.max(1, Math.floor(availH / ROW_H))
-        const maxItems = maxRows * 2
+        let maxItems = maxRows * 2
+        // 逐个尝试，确保带图片的批次不超出剩余高度
+        while (maxItems >= 2) {
+          const trial = items.slice(0, maxItems)
+          if (calcBatchHeight(trial) <= availH) break
+          maxItems -= 2
+          if (maxItems < 2) maxItems = 2
+        }
         const batch = items.slice(0, Math.max(2, maxItems))
         items = items.slice(Math.max(2, maxItems))
-        const rows = Math.ceil(batch.length / 2)
 
         curPage.push({ cat, sub, items: batch })
-        curH += overhead + rows * ROW_H
+        curH += overhead + calcBatchHeight(batch)
         lastCatId = cat.id
       }
     }
