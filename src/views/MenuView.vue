@@ -128,18 +128,29 @@ function copyText(text) {
   navigator.clipboard.writeText(text).catch(() => {})
 }
 
-async function saveQrImage(url, name) {
-  try {
-    const res = await fetch(url)
-    const blob = await res.blob()
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = name + '.jpg'
-    a.click()
-    URL.revokeObjectURL(a.href)
-  } catch (e) {
-    window.open(url, '_blank')
+function saveQrImage(url, name) {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    canvas.toBlob(blob => {
+      if (blob) {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = name + '.jpg'
+        a.click()
+        URL.revokeObjectURL(a.href)
+      } else {
+        window.open(url, '_blank')
+      }
+    }, 'image/jpeg')
   }
+  img.onerror = () => { window.open(url, '_blank') }
+  img.src = url
 }
 
 const sortedCategories = computed(() => {
@@ -233,6 +244,13 @@ watch(sortedCategories, (cats) => {
 </script>
 
 <style scoped>
+.menu-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* ===== 搜索 ===== */
 .search-bar {
   display: flex; align-items: center; gap: 6px;
@@ -258,10 +276,12 @@ watch(sortedCategories, (cats) => {
   display: flex;
   transition: transform 0.3s ease;
   will-change: transform;
+  height: 100%;
 }
 .swipe-page {
   min-width: 100%;
   max-width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -297,7 +317,7 @@ watch(sortedCategories, (cats) => {
 .sub-tab-btn:active { transform: scale(0.96); border-radius: 16px; }
 .sub-tab-btn.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--badge-text, #2B1600);
   border-color: var(--accent);
 }
 
@@ -489,10 +509,9 @@ watch(sortedCategories, (cats) => {
 .qr-name {
   font-size: 13px;
   color: var(--text-secondary);
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .qr-copy {
   font-size: 14px;

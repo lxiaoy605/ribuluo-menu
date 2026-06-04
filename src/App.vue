@@ -19,7 +19,7 @@
         <!-- 管理页面：操作按钮 -->
         <template v-if="isAdmin">
           <select class="theme-switch" v-model="currentTheme" @change="onThemeChangeAttempt">
-            <option v-for="t in themeOptions" :key="t.id" :value="t.id">{{ t.label }}</option>
+            <option v-for="t in themeOptions" :key="t.id" :value="t.id">{{ tName(t.name) }}</option>
           </select>
           <button class="btn-admin-link" @click="onEditShopName">✏️ {{ t('editShopName') }}</button>
           <button class="btn-admin-link" @click="showPwdModal = true">🔑 重置密码</button>
@@ -280,7 +280,7 @@ body {
   background: transparent;
   font-family: var(--body-font);
 }
-.btn-admin-link:hover { background: var(--accent); color: #fff; }
+.btn-admin-link:hover { background: var(--accent); color: var(--badge-text, #2B1600); }
 
 .app-main { flex: 1; display: flex; flex-direction: column; }
 

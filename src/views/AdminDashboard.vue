@@ -833,7 +833,7 @@ watch(() => getMenuData(), (menuData) => {
 }
 .select-option.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--badge-text, #2B1600);
   border-color: var(--accent);
 }
 
