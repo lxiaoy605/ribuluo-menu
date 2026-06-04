@@ -18,6 +18,9 @@
         </template>
         <!-- 管理页面：操作按钮 -->
         <template v-if="isAdmin">
+          <select class="theme-switch" v-model="currentTheme" @change="onThemeChangeAttempt">
+            <option v-for="t in themeOptions" :key="t.id" :value="t.id">{{ t.label }}</option>
+          </select>
           <button class="btn-admin-link" @click="onEditShopName">✏️ {{ t('editShopName') }}</button>
           <button class="btn-admin-link" @click="showPwdModal = true">🔑 重置密码</button>
           <button class="btn-admin-link" @click="doLogout">🚪 退出</button>
@@ -291,7 +294,7 @@ body {
 }
 .btn:active { transform: scale(0.96); border-radius: 8px; }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); color: var(--badge-text, #2B1600); }
 .btn-primary:hover { background: var(--accent-light); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-sm { padding: 4px 12px; font-size: 12px; }

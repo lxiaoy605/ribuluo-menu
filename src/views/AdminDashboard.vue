@@ -39,7 +39,7 @@
                 <span class="item-name">{{ tName(item.name) }}
                   <span v-if="item.image" class="img-dot" title="已上传图片">📷</span>
                   <span v-else class="img-dot no" title="暂无图片">⚪</span>
-                  <span v-if="item.recommended" class="badge badge-rec">⭐</span>
+                  <span v-if="item.recommended" class="rec-star">⭐</span>
                   <span v-if="item.soldOut" class="badge badge-sold">{{ t('soldOut') }}</span>
                 </span>
                 <span class="item-price">{{ formatPrice(item.price) }}</span>
@@ -58,6 +58,7 @@
     <!-- 联系方式 -->
     <section class="admin-section">
       <h3 class="section-title">{{ t('contact') }}</h3>
+      <p v-if="qrSaveMsg" class="qr-save-msg">{{ qrSaveMsg }}</p>
       <div class="qr-uploads">
         <div class="qr-upload-item" v-for="q in qrList" :key="q.key">
           <span class="qr-label">{{ q.label }}</span>
@@ -256,6 +257,7 @@ const contacts = reactive({
   telegram: { url: '', name: '' }
 })
 const qrNames = reactive({ wechat: '', whatsapp: '', telegram: '' })
+const qrSaveMsg = ref('')
 const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
 const showCategoryEditor = ref(false)
 const showSubEditor = ref(false)
@@ -345,6 +347,8 @@ function saveQrName(key) {
   contacts[key].name = qrNames[key]
   const d = getMenuData()
   if (d) { d.contacts = { ...contacts }; setMenuData(d) }
+  qrSaveMsg.value = '保存成功'
+  setTimeout(() => { qrSaveMsg.value = '' }, 3000)
 }
 function removeQr(key) {
   contacts[key].url = ''
@@ -833,6 +837,7 @@ watch(() => getMenuData(), (menuData) => {
   border-color: var(--accent);
 }
 
+.qr-save-msg { color: var(--success); font-size: 13px; margin-bottom: 8px; }
 .qr-uploads { display: flex; flex-direction: column; gap: 12px; }
 .qr-upload-item {
   display: flex; align-items: center; gap: 8px;

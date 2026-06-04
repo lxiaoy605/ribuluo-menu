@@ -307,6 +307,7 @@ watch(sortedCategories, (cats) => {
   overflow-y: auto;
   padding: 4px 12px;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .item-row {
   display: flex;
