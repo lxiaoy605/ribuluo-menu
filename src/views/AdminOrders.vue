@@ -379,12 +379,24 @@ function toggleExpand(id) {
 }
 
 // ========== 操作 ==========
+async function refreshCounts() {
+  try {
+    const s = { orderId: search.orderId || undefined, dateFrom: search.dateFrom || undefined, dateTo: search.dateTo || undefined, customerName: search.customerName || undefined, orderMode: search.orderMode || undefined, contactType: search.contactType || undefined, contactInfo: search.contactInfo || undefined }
+    const [pRes, cRes] = await Promise.all([
+      searchOrders({ status: 'pending', search: s, page: 1, pageSize: 1 }),
+      searchOrders({ status: 'completed', search: s, page: 1, pageSize: 1 })
+    ])
+    pendingTotal.value = pRes.count
+    completedTotal.value = cRes.count
+  } catch (e) { /* ignore */ }
+}
+
 function confirmComplete(order) {
   confirmMsg.value = `确认完成结算订单 ${order.id}？完成后将进入"已完成"列表。`
   confirmAction = async () => {
     await updateOrderById(order.id, { ...order, status: 'completed', deliveryFee: order.delivery_fee || 0, orderMode: order.order_mode, deliveryAddress: order.delivery_address, guestCount: order.guest_count, customerName: order.customer_name, contactType: order.contact_type, contactInfo: order.contact_info, notes: order.notes, expectedTime: order.expected_time, items: order.items, totalAmount: order.total_amount })
     showToast('结算完成')
-    loadStats(); loadOrders()
+    await loadStats(); await loadOrders(); await refreshCounts()
   }
 }
 
@@ -393,7 +405,7 @@ function confirmUndo(order) {
   confirmAction = async () => {
     await updateOrderById(order.id, { ...order, status: 'pending', deliveryFee: order.delivery_fee || 0, orderMode: order.order_mode, deliveryAddress: order.delivery_address, guestCount: order.guest_count, customerName: order.customer_name, contactType: order.contact_type, contactInfo: order.contact_info, notes: order.notes, expectedTime: order.expected_time, items: order.items, totalAmount: order.total_amount })
     showToast('已撤回')
-    loadStats(); loadOrders()
+    await loadStats(); await loadOrders(); await refreshCounts()
   }
 }
 
@@ -402,7 +414,7 @@ function confirmDelete(order) {
   confirmAction = async () => {
     await deleteOrder(order.id)
     showToast('已删除')
-    loadStats(); loadOrders()
+    await loadStats(); await loadOrders(); await refreshCounts()
   }
 }
 
@@ -690,7 +702,7 @@ onUnmounted(() => {
 }
 .btn-expand:active { background: var(--accent); color: var(--badge-text, #2B1600); }
 
-.oc-detail { padding: 0 10px 10px; border-top: 1px solid var(--border); background: var(--bg-primary); }
+.oc-detail { padding: 0 10px 10px; border-top: 1px solid var(--border); background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; margin: 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .ocd-actions { display: flex; gap: 6px; padding: 8px 0; flex-wrap: wrap; }
 
 /* 详情表格 */
