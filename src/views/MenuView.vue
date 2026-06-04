@@ -76,10 +76,12 @@
                     <span class="item-name" @click="copyName(p)">{{ tName(p.name) }}</span>
                     <span v-if="p.recommended" class="badge badge-rec">{{ t('recommended') }}</span>
                   </div>
-                  <div class="qty-ctrl">
-                    <button class="qty-btn" :disabled="getItemQty(p.id)===0" @click="removeItem(p.id)">−</button>
-                    <input class="qty-input" :value="getItemQty(p.id)" @input="e => onQtyInput(p.id, e)" inputmode="numeric" />
-                    <button class="qty-btn" :disabled="getItemQty(p.id)>=999" @click="addItem(p)">+</button>
+                  <div class="qty-wrap">
+                    <div class="qty-ctrl">
+                      <button class="qty-btn" :disabled="getItemQty(p.id)===0" @click="removeItem(p.id)">−</button>
+                      <input class="qty-input" :value="getItemQty(p.id)" @input="e => onQtyInput(p.id, e)" inputmode="numeric" />
+                      <button class="qty-btn" :disabled="getItemQty(p.id)>=999" @click="addItem(p)">+</button>
+                    </div>
                   </div>
                   <span class="item-price">{{ formatPrice(p.price) }}</span>
                 </template>
@@ -390,6 +392,7 @@ watch(sortedCategories, (cats) => {
   border-radius: 6px;
   object-fit: cover;
   flex-shrink: 0;
+  margin-right: 4px;
 }
 .item-info {
   display: flex;
@@ -415,6 +418,13 @@ watch(sortedCategories, (cats) => {
   color: var(--text-price);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* 无图菜品数量控件居中容器 */
+.qty-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
 /* ===== 数量控件 ===== */
@@ -479,7 +489,7 @@ watch(sortedCategories, (cats) => {
 .item-info-row2 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
 
 /* 徽章 */

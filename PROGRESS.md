@@ -176,6 +176,31 @@
 | 修改 | `src/views/CartView.vue` |
 | 修改 | `src/router/index.js` |
 
+### 2026-06-04 用户端 UI 优化
+
+**顶栏购物车按钮优化** (`src/App.vue`)
+- 购物车图标改为按钮样式（40×40px 圆角方块、背景、阴影、按下缩放动效）
+- 进入 /cart 页面后，顶栏购物车动态切换为"← 返回"按钮，点击返回菜单页
+- 角标位置适配新按钮（top-right 定位）
+
+**菜单页菜品间距调整** (`src/views/MenuView.vue`)
+- 有图菜品：图片增加 margin-right: 4px 拉开与文字距离
+- 有图菜品第二行：价格与数量控件紧邻排列（gap: 10px，不再 space-between）
+- 无图菜品：数量控件居中显示（qty-wrap flex:1 + justify-content: center）
+
+**购物车页面全面优化** (`src/views/CartView.vue`)
+- 菜品名称显示修复：`tName(item.name)` 替代原始 JSON 对象，20 字符截断
+- 表单布局重构：称呼(整行) → 人数+预期时间 → 联系方式+号码 → 预订方式 → 配送地址* → 备注
+- 联系方式下拉框去除 emoji 图标（与真实 App 不匹配）
+- 必填字段加红色 * 号（号码、配送地址）
+- 号码提交校验（contactInfo 必填）
+- placeholder 样式主题适配（::placeholder color + opacity）
+
+**国际化更新** (`src/composables/useI18n.js`)
+- `orderDishes` 翻译更新为"加菜"风格：en 'Add Dishes' / am 'Ավելացնել' / ru 'Добавить'
+
+**构建验证**：`npm run build` 零报错
+
 ## 下一步
 
 1. ❗ 用户在 Supabase SQL Editor 中执行 `supabase/orders_v2_migration.sql`（包含 delivery_fee 字段）

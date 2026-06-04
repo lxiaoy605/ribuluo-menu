@@ -32,7 +32,7 @@
             <span class="oi-col-sub">{{ t('subtotal') }}</span>
           </div>
           <div v-for="item in cartItems" :key="item.id" class="oi-row">
-            <span class="oi-col-name">{{ item.name }}</span>
+            <span class="oi-col-name">{{ fmtName(item.name) }}</span>
             <span class="oi-col-qty">
               <span class="qty-ctrl-sm">
                 <button class="qty-btn-sm" @click="removeItem(item.id)">−</button>
@@ -51,29 +51,18 @@
 
         <!-- 预订表单 -->
         <div class="order-form">
+          <!-- 称呼（整行） -->
           <div class="form-group">
-            <label class="form-label">{{ t('orderMode') }}</label>
-            <div class="radio-row">
-              <label class="radio-item" @click="updateForm({ orderMode: 'dine_in' })">
-                <input type="radio" :checked="cartForm.orderMode === 'dine_in'" /> {{ t('dineIn') }}
-              </label>
-              <label class="radio-item" @click="updateForm({ orderMode: 'delivery' })">
-                <input type="radio" :checked="cartForm.orderMode === 'delivery'" /> {{ t('delivery') }}
-              </label>
-            </div>
-          </div>
-
-          <div v-if="cartForm.orderMode === 'delivery'" class="form-group">
-            <label class="form-label">{{ t('deliveryAddress') }} <span style="color:var(--danger)">*</span></label>
+            <label class="form-label">{{ t('customerName') }}</label>
             <input
               class="form-input"
-              :value="cartForm.deliveryAddress"
-              @input="updateForm({ deliveryAddress: $event.target.value })"
-              :placeholder="t('deliveryAddress')"
-              maxlength="150"
+              :value="cartForm.customerName"
+              @input="updateForm({ customerName: $event.target.value })"
+              :placeholder="t('customerName')"
             />
           </div>
 
+          <!-- 人数 + 预期时间 -->
           <div class="form-row">
             <div class="form-group form-half">
               <label class="form-label">{{ t('guestCount') }}</label>
@@ -96,16 +85,8 @@
             </div>
           </div>
 
+          <!-- 联系方式 + 号码（同一行） -->
           <div class="form-row">
-            <div class="form-group form-half">
-              <label class="form-label">{{ t('customerName') }}</label>
-              <input
-                class="form-input"
-                :value="cartForm.customerName"
-                @input="updateForm({ customerName: $event.target.value })"
-                :placeholder="t('customerName')"
-              />
-            </div>
             <div class="form-group form-half">
               <label class="form-label">{{ t('contactType') }}</label>
               <select
@@ -113,24 +94,49 @@
                 :value="cartForm.contactType"
                 @change="updateForm({ contactType: $event.target.value })"
               >
-                <option value="phone">📞 Phone</option>
-                <option value="whatsapp">💬 WhatsApp</option>
-                <option value="telegram">📩 Telegram</option>
-                <option value="wechat">💚 WeChat</option>
+                <option value="phone">Phone</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="telegram">Telegram</option>
+                <option value="wechat">WeChat</option>
               </select>
+            </div>
+            <div class="form-group form-half">
+              <label class="form-label">{{ t('contactInfo') }} <span class="required-star">*</span></label>
+              <input
+                class="form-input"
+                :value="cartForm.contactInfo"
+                @input="updateForm({ contactInfo: $event.target.value })"
+                :placeholder="t('contactInfo')"
+              />
             </div>
           </div>
 
+          <!-- 预订方式 -->
           <div class="form-group">
-            <label class="form-label">{{ t('contactInfo') }}</label>
+            <label class="form-label">{{ t('orderMode') }}</label>
+            <div class="radio-row">
+              <label class="radio-item" @click="updateForm({ orderMode: 'dine_in' })">
+                <input type="radio" :checked="cartForm.orderMode === 'dine_in'" /> {{ t('dineIn') }}
+              </label>
+              <label class="radio-item" @click="updateForm({ orderMode: 'delivery' })">
+                <input type="radio" :checked="cartForm.orderMode === 'delivery'" /> {{ t('delivery') }}
+              </label>
+            </div>
+          </div>
+
+          <!-- 配送地址（仅配送模式） -->
+          <div v-if="cartForm.orderMode === 'delivery'" class="form-group">
+            <label class="form-label">{{ t('deliveryAddress') }} <span class="required-star">*</span></label>
             <input
               class="form-input"
-              :value="cartForm.contactInfo"
-              @input="updateForm({ contactInfo: $event.target.value })"
-              :placeholder="t('contactInfo')"
+              :value="cartForm.deliveryAddress"
+              @input="updateForm({ deliveryAddress: $event.target.value })"
+              :placeholder="t('deliveryAddress')"
+              maxlength="150"
             />
           </div>
 
+          <!-- 备注 -->
           <div class="form-group">
             <label class="form-label">{{ t('notes') }}</label>
             <textarea
@@ -198,7 +204,7 @@
               </thead>
               <tbody>
                 <tr v-for="(item, i) in (order.items || [])" :key="i">
-                  <td>{{ item.name }}</td>
+                  <td>{{ fmtName(item.name) }}</td>
                   <td>{{ item.qty }}</td>
                   <td>֏ {{ (item.price || 0).toLocaleString() }}</td>
                   <td>֏ {{ ((item.price || 0) * (item.qty || 0)).toLocaleString() }}</td>
@@ -278,7 +284,7 @@ import { useCart } from '../composables/useCart'
 import { useOrders } from '../composables/useOrders'
 
 const router = useRouter()
-const { t } = useI18n()
+const { t, tName } = useI18n()
 const { cartItems, totalAmount, cartForm, itemCount, editingOrderId, hasItems, clearCart, updateForm, loadOrder, addItem, removeItem, addOrderId, getOrderIds } = useCart()
 const { submitOrder, updateOrderById, getOrdersByIds, genOrderId } = useOrders()
 
@@ -318,6 +324,10 @@ async function handleSubmit() {
     return
   }
   const form = cartForm.value
+  if (!form.contactInfo || !form.contactInfo.trim()) {
+    submitError.value = '请填写号码'
+    return
+  }
   if (form.orderMode === 'delivery' && !form.deliveryAddress.trim()) {
     submitError.value = '请填写配送地址'
     return
@@ -433,6 +443,11 @@ function toggleExpand(orderId) {
   if (s.has(orderId)) s.delete(orderId)
   else s.add(orderId)
   expandedIds.value = s
+}
+
+function fmtName(nameObj) {
+  const name = tName(nameObj) || '-'
+  return name.length > 20 ? name.slice(0, 20) + '…' : name
 }
 
 function fmtTime(ts) {
@@ -589,6 +604,9 @@ onMounted(() => {
   color: var(--text-secondary);
   margin-bottom: 4px;
 }
+.required-star {
+  color: var(--danger);
+}
 .form-input, .form-select {
   width: 100%;
   padding: 8px 10px;
@@ -599,6 +617,10 @@ onMounted(() => {
   color: var(--text-primary);
   outline: none;
   font-family: var(--body-font);
+}
+.form-input::placeholder, .form-select::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.55;
 }
 .form-input:focus, .form-select:focus { border-color: var(--accent); }
 .form-textarea { resize: vertical; min-height: 48px; }

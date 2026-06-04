@@ -3,8 +3,11 @@
     <!-- 登录页不显示顶栏 -->
     <div class="app-header" v-if="!isLogin">
       <div class="header-left" v-if="!isAdmin">
-        <span class="cart-icon" @click="goCart">🛒</span>
-        <span v-if="itemCount > 0" class="cart-badge" @click="goCart">{{ itemCount }}</span>
+        <button v-if="isCart" class="btn-back-header" @click="goMenu">← {{ t('back') }}</button>
+        <button v-else class="btn-cart-header" @click="goCart">
+          🛒
+          <span v-if="itemCount > 0" class="cart-badge">{{ itemCount }}</span>
+        </button>
       </div>
       <!-- 客户页面：店名居中 -->
       <span v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</span>
@@ -90,6 +93,7 @@ const { itemCount } = useCart()
 
 const isLogin = computed(() => route.path === '/admin' || route.path === '/admin/')
 const isAdmin = computed(() => route.path.startsWith('/admin'))
+const isCart = computed(() => route.path === '/cart')
 
 const showThemeConfirm = ref(false)
 const pendingTheme = ref('')
@@ -132,6 +136,10 @@ function onEditShopName() {
 
 function goCart() {
   router.push('/cart')
+}
+
+function goMenu() {
+  router.push('/')
 }
 
 function doLogout() {
@@ -240,12 +248,57 @@ body {
   backdrop-filter: blur(10px);
 }
 
-.header-left { flex: 1; display: flex; align-items: center; gap: 8px; position: relative; }
-.cart-icon { font-size: 22px; cursor: pointer; }
+.header-left { flex: 1; display: flex; align-items: center; }
+
+.btn-cart-header {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: all 0.15s;
+  padding: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-cart-header:active {
+  transform: scale(0.92);
+  background: var(--border);
+}
+
+.btn-back-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: var(--body-font);
+  white-space: nowrap;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+}
+.btn-back-header:active {
+  transform: scale(0.95);
+  background: rgba(212,175,55,0.15);
+}
+
 .cart-badge {
   position: absolute;
-  top: 4px;
-  left: 24px;
+  top: -4px;
+  right: -4px;
   min-width: 18px;
   height: 18px;
   line-height: 18px;
@@ -256,7 +309,6 @@ body {
   color: #fff;
   border-radius: 9px;
   padding: 0 5px;
-  cursor: pointer;
 }
 
 .header-shop-name {
