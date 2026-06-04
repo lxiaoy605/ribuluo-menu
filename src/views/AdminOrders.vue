@@ -72,7 +72,7 @@
             </span>
             <span class="ocs-time">{{ fmtTime(order.created_at) }}</span>
             <span class="ocs-amount">֏ {{ (order.total_amount || 0).toLocaleString() }}</span>
-            <span v-if="order.delivery_fee" class="ocs-fee">+ 配送费 ֏ {{ order.delivery_fee.toLocaleString() }}</span>
+            <span v-if="order.delivery_fee" class="ocs-fee">🚚 +֏ {{ order.delivery_fee.toLocaleString() }}</span>
           </div>
           <button class="btn-expand">{{ expandedIds.has(order.id) ? '收起' : '展开' }}</button>
         </div>
@@ -112,8 +112,8 @@
               <a class="btn-delivery-app" :href="yandexGoUrl(order.delivery_address)" target="_blank">Yandex Go 🚕</a>
               <a class="btn-delivery-app" :href="ggUrl(order.delivery_address)" target="_blank">GG 🛵</a>
             </div>
-            <div class="di-row">
-              <span>配送费：֏ {{ (order.delivery_fee || 0).toLocaleString() }}</span>
+            <div v-if="order.order_mode === 'delivery'" class="di-row">
+              <span>🚚 配送费：֏ {{ (order.delivery_fee || 0).toLocaleString() }}</span>
               <button v-if="order.status === 'pending'" class="btn btn-sm btn-outline" @click="addDeliveryFee(order)">+ 追加配送费</button>
             </div>
           </div>
@@ -655,8 +655,10 @@ onUnmounted(() => {
 .ao-title { font-size: 17px; font-weight: 600; }
 
 /* 统计栏 */
-.stats-bar { padding: 10px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 2.2; margin-bottom: 8px; }
-.stats-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.stats-bar { padding: 12px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); font-size: 12px; line-height: 2.2; margin-bottom: 8px; }
+.stats-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 0; }
+.stats-row:first-child { border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+.stats-row:last-child { padding-top: 8px; }
 .stats-label { color: var(--text-secondary); flex-shrink: 0; }
 .stats-group { display: flex; gap: 12px; flex: 1; justify-content: space-around; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; }
 .stats-item { white-space: nowrap; }
@@ -678,7 +680,7 @@ onUnmounted(() => {
 .ao-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
 /* 列表 */
-.order-list { flex: 1; overflow-y: auto; padding: 10px; }
+.order-list { flex: 1; overflow-y: auto; padding: 0; }
 .order-card { background: var(--bg-secondary); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
 .oc-summary { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; gap: 10px; }
 .ocs-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; justify-content: space-between; }

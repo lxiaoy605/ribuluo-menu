@@ -52,7 +52,7 @@
         <div class="order-form">
           <!-- 称呼（整行） -->
           <div class="form-group">
-            <label class="form-label">{{ t('customerName') }}</label>
+            <label class="form-label">{{ t('customerName') }} <span class="required-star">*</span></label>
             <input
               class="form-input"
               :value="cartForm.customerName"
@@ -61,10 +61,10 @@
             />
           </div>
 
-          <!-- 人数 + 预期时间 -->
+          <!-- 人数 + 预订时间 -->
           <div class="form-row">
             <div class="form-group form-half">
-              <label class="form-label">{{ t('guestCount') }}</label>
+              <label class="form-label">{{ t('guestCount') }} <span class="required-star">*</span></label>
               <input
                 class="form-input"
                 type="number"
@@ -80,6 +80,7 @@
                 type="datetime-local"
                 :value="cartForm.expectedTime"
                 @input="updateForm({ expectedTime: $event.target.value })"
+                :min="nowISO()"
               />
             </div>
           </div>
@@ -231,8 +232,8 @@
                   <button class="btn-copy-inline" @click="copyText(order.delivery_address)">📋</button>
                 </span>
               </div>
-              <div class="di-row" v-if="order.delivery_fee">
-                <span>配送费：֏ {{ order.delivery_fee.toLocaleString() }}</span>
+              <div class="di-row" v-if="order.order_mode === 'delivery' && order.delivery_fee">
+                <span>🚚 配送费：֏ {{ order.delivery_fee.toLocaleString() }}</span>
               </div>
               <div class="di-row di-status">
                 <span :class="order.status === 'completed' ? 'status-done' : 'status-pending'">
@@ -319,12 +320,24 @@ async function handleSubmit() {
     return
   }
   const form = cartForm.value
+  if (!form.customerName || !form.customerName.trim()) {
+    submitError.value = '请填写称呼'
+    return
+  }
+  if (!form.guestCount || form.guestCount < 1) {
+    submitError.value = '请填写人数'
+    return
+  }
   if (!form.contactInfo || !form.contactInfo.trim()) {
     submitError.value = '请填写号码'
     return
   }
   if (form.orderMode === 'delivery' && !form.deliveryAddress.trim()) {
     submitError.value = '请填写配送地址'
+    return
+  }
+  if (form.expectedTime && form.expectedTime < nowISO()) {
+    submitError.value = '预订时间不能早于当前时间'
     return
   }
 
@@ -460,6 +473,12 @@ function fmtTime(ts) {
 
 function copyText(text) {
   navigator.clipboard.writeText(text).catch(() => {})
+}
+
+function nowISO() {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+  return d.toISOString().slice(0, 16)
 }
 
 onMounted(() => {
@@ -681,9 +700,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   flex: 1;
   min-width: 0;
+  justify-content: space-between;
 }
 .hs-id {
   font-size: 13px;

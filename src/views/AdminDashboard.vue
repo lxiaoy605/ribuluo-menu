@@ -228,9 +228,8 @@
       <div class="modal-content">
         <h3 class="modal-title">{{ t('share') }}</h3>
         <div class="share-qrcode" ref="qrContainer"></div>
-        <p style="text-align:center;color:var(--text-secondary);margin:12px 0">{{ t('scanQR') }}</p>
         <div class="modal-actions">
-          <button class="btn btn-outline" @click="downloadQrCode">📥 下载二维码</button>
+          <button class="btn btn-outline" @click="downloadQrCode">下载</button>
           <button class="btn btn-outline" @click="copyLink">{{ t('copyLink') }}</button>
           <button class="btn btn-primary" @click="showShare = false">{{ t('cancel') }}</button>
         </div>
@@ -813,19 +812,23 @@ function downloadQrCode() {
 
 // 分享二维码
 watch(showShare, async (val) => {
-  if (val && qrContainer.value) {
+  if (val) {
     await nextTick()
-    try {
-      const QRCode = (await import('qrcode')).default
-      const url = window.location.href.split('#')[0]
-      const canvas = document.createElement('canvas')
-      await QRCode.toCanvas(canvas, url, { width: 200, margin: 2 })
-      qrContainer.value.innerHTML = ''
-      qrContainer.value.appendChild(canvas)
-      qrCanvas.value = canvas
-    } catch (e) {
-      console.error('二维码生成失败', e)
-    }
+    // 等待 DOM 渲染后再生成
+    setTimeout(async () => {
+      if (!qrContainer.value) return
+      try {
+        const QRCode = (await import('qrcode')).default
+        const url = 'https://ribuluo-menu.vercel.app/#/'
+        const canvas = document.createElement('canvas')
+        await QRCode.toCanvas(canvas, url, { width: 220, margin: 1 })
+        qrContainer.value.innerHTML = ''
+        qrContainer.value.appendChild(canvas)
+        qrCanvas.value = canvas
+      } catch (e) {
+        console.error('二维码生成失败', e)
+      }
+    }, 100)
   }
 })
 
