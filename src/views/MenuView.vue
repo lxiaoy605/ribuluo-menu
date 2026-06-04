@@ -69,20 +69,15 @@
       <div class="contact-panel-inner">
         <h4 class="contact-title">欢迎联系</h4>
         <div class="contact-qr-row">
-          <div v-if="contacts.wechat" class="qr-item">
-            <img :src="contacts.wechat" />
-            <span>微信</span>
-          </div>
-          <div v-if="contacts.whatsapp" class="qr-item">
-            <img :src="contacts.whatsapp" />
-            <span>WhatsApp</span>
-          </div>
-          <div v-if="contacts.telegram" class="qr-item">
-            <img :src="contacts.telegram" />
-            <span>Telegram</span>
+          <div v-for="c in contactList" :key="c.key" class="qr-item">
+            <img :src="c.url" @click="saveQrImage(c.url, c.name || c.key)" title="点击保存图片" />
+            <div class="qr-name-row">
+              <span class="qr-name">{{ c.name || c.key }}</span>
+              <span v-if="c.name" class="qr-copy" @click.stop="copyText(c.name)" title="复制账号">📋</span>
+            </div>
           </div>
         </div>
-        <p v-if="!contacts.wechat && !contacts.whatsapp && !contacts.telegram" style="color:var(--text-secondary);text-align:center;padding:20px">暂无联系方式</p>
+        <p v-if="!contactList.length" style="color:var(--text-secondary);text-align:center;padding:20px">暂无联系方式</p>
       </div>
     </div>
 
@@ -122,7 +117,30 @@ const subTabsContainer = ref(null)
 const catIcons = ['🔥', '🍳', '🍲', '🍺', '🥤', '🍰', '🍜', '🥗']
 
 const data = computed(() => getMenuData() || { categories: [], shopName: {} })
-const contacts = computed(() => data.value.contacts || { wechat: '', whatsapp: '', telegram: '' })
+const contacts = computed(() => data.value.contacts || { wechat: { url: '', name: '' }, whatsapp: { url: '', name: '' }, telegram: { url: '', name: '' } })
+const contactList = computed(() => {
+  return ['wechat', 'whatsapp', 'telegram']
+    .map(k => ({ key: k, ...contacts.value[k] }))
+    .filter(c => c.url)
+})
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).catch(() => {})
+}
+
+async function saveQrImage(url, name) {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = name + '.jpg'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  } catch (e) {
+    window.open(url, '_blank')
+  }
+}
 
 const sortedCategories = computed(() => {
   return (data.value.categories || []).slice().sort((a, b) => (a.sort || 0) - (b.sort || 0))
@@ -460,9 +478,25 @@ watch(sortedCategories, (cats) => {
   border-radius: 8px;
   object-fit: cover;
   border: 2px solid var(--border);
+  cursor: pointer;
 }
-.qr-item span {
-  font-size: 12px;
+.qr-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.qr-name {
+  font-size: 13px;
   color: var(--text-secondary);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.qr-copy {
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.qr-copy:active { transform: scale(0.85); }
 </style>

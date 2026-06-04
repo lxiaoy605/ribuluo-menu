@@ -111,8 +111,15 @@ async function initDefaultData(defaultData) {
   if (existing.products) { delete existing.products; migrated = true }
 
   if (!existing.contacts) {
-    existing.contacts = { wechat: '', whatsapp: '', telegram: '' }
+    existing.contacts = { wechat: { url: '', name: '' }, whatsapp: { url: '', name: '' }, telegram: { url: '', name: '' } }
     migrated = true
+  }
+  // 迁移旧 contacts 格式（string → {url, name}）
+  for (const k of ['wechat', 'whatsapp', 'telegram']) {
+    if (typeof existing.contacts[k] === 'string') {
+      existing.contacts[k] = { url: existing.contacts[k], name: '' }
+      migrated = true
+    }
   }
   if (!existing.passwordHash) {
     existing.passwordHash = defaultData.passwordHash

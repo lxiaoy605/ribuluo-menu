@@ -7,8 +7,8 @@
       </div>
       <!-- 客户页面：店名居中 -->
       <h1 v-if="!isAdmin" class="header-shop-name">{{ tName(shopNameComputed) }}</h1>
-      <!-- 管理页面：标题 -->
-      <span v-if="isAdmin" class="header-admin-title">{{ t('edit') }}</span>
+      <!-- 管理页面：占位 -->
+      <span v-if="isAdmin" style="flex:1"></span>
       <div class="header-right">
         <!-- 客户页面：语言切换 -->
         <template v-if="!isAdmin">
@@ -24,6 +24,7 @@
           </select>
           <button class="btn-admin-link" @click="onEditShopName">✏️ {{ t('editShopName') }}</button>
           <button class="btn-admin-link" @click="showPwdModal = true">🔑 重置密码</button>
+          <button class="btn-admin-link" @click="doLogout">🚪 退出</button>
         </template>
       </div>
     </div>
@@ -73,13 +74,14 @@
 
 <script setup>
 import { computed, ref, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from './composables/useI18n'
 import { useTheme } from './composables/useTheme'
 import { useMenuData } from './composables/useMenuData'
 import { defaultMenu } from './data/defaultMenu'
 
 const route = useRoute()
+const router = useRouter()
 const { t, tName, currentLang, setLang, initLang, langOptions } = useI18n()
 const { currentTheme, applyTheme, initTheme, themeOptions } = useTheme()
 const { getMenuData, initDefaultData, verifyPassword, hashPassword, setMenuData } = useMenuData()
@@ -124,6 +126,11 @@ function cancelThemeChange() {
 
 function onEditShopName() {
   window.dispatchEvent(new CustomEvent('open-shop-name-editor'))
+}
+
+function doLogout() {
+  sessionStorage.removeItem('ribuluo_admin_auth')
+  router.replace('/admin')
 }
 
 function closePwdModal() {

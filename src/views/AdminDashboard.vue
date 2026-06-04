@@ -61,11 +61,14 @@
       <div class="qr-uploads">
         <div class="qr-upload-item" v-for="q in qrList" :key="q.key">
           <label>{{ q.icon }} {{ q.label }}</label>
-          <div class="qr-preview" v-if="contacts[q.key]" @click="triggerQrUpload(q.key)">
-            <img :src="contacts[q.key]" />
+          <div class="qr-col">
+            <div class="qr-preview" v-if="contacts[q.key].url" @click="triggerQrUpload(q.key)">
+              <img :src="contacts[q.key].url" />
+            </div>
+            <div class="qr-upload-btn" v-else @click="triggerQrUpload(q.key)">+ 上传</div>
+            <input class="form-input form-input-sm" v-model="contacts[q.key].name" :placeholder="q.label + '账号名'" @change="saveContacts" style="margin-top:6px;width:120px" />
           </div>
-          <div class="qr-upload-btn" v-else @click="triggerQrUpload(q.key)">+ 上传</div>
-          <button v-if="contacts[q.key]" class="btn btn-sm btn-danger" @click="contacts[q.key]='';saveContacts()">移除</button>
+          <button v-if="contacts[q.key].url" class="btn btn-sm btn-danger" @click="contacts[q.key].url='';contacts[q.key].name='';saveContacts()">移除</button>
           <input type="file" accept="image/*" :ref="el => qrInputs[q.key] = el" style="display:none" @change="onQrUpload($event, q.key)" />
         </div>
       </div>
@@ -217,6 +220,7 @@
         <div class="share-qrcode" ref="qrContainer"></div>
         <p style="text-align:center;color:var(--text-secondary);margin:12px 0">{{ t('scanQR') }}</p>
         <div class="modal-actions">
+          <button class="btn btn-outline" @click="downloadQrCode">📥 下载二维码</button>
           <button class="btn btn-outline" @click="copyLink">{{ t('copyLink') }}</button>
           <button class="btn btn-primary" @click="showShare = false">{{ t('cancel') }}</button>
         </div>
@@ -247,7 +251,11 @@ const {
 
 const authed = ref(false)
 const data = ref(null)
-const contacts = reactive({ wechat: '', whatsapp: '', telegram: '' })
+const contacts = reactive({
+  wechat: { url: '', name: '' },
+  whatsapp: { url: '', name: '' },
+  telegram: { url: '', name: '' }
+})
 const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
 const showCategoryEditor = ref(false)
 const showSubEditor = ref(false)
@@ -274,6 +282,7 @@ const showShare = ref(false)
 const showExportOptions = ref(false)
 const exporting = ref(false)
 const qrContainer = ref(null)
+const qrCanvas = ref(null)
 const uploading = ref(false)
 
 const imagePosOptions = [
@@ -339,7 +348,7 @@ function onQrUpload(e, type) {
   if (file.size > 5 * 1024 * 1024) { alert('图片不能超过5MB'); return }
   uploading.value = true
   uploadImage(file).then(result => {
-    contacts[type] = result.url
+    contacts[type].url = result.url
     saveContacts()
     uploading.value = false
   }).catch(err => {
@@ -566,16 +575,24 @@ function buildPage(pageIdx, pageData) {
 
   // 底部联系方式二维码
   const qrContacts = data.value?.contacts || {}
-  const qrKeys = ['wechat', 'whatsapp', 'telegram']
-  const qrUrls = qrKeys.map(k => qrContacts[k]).filter(Boolean)
-  if (qrUrls.length > 0) {
+  const qrList = ['wechat', 'whatsapp', 'telegram'].map(k => ({ key: k, ...qrContacts[k] })).filter(c => c.url)
+  if (qrList.length > 0) {
     const qrBar = document.createElement('div')
-    qrBar.style.cssText = `display:flex;justify-content:center;gap:40px;padding-top:16px;flex-shrink:0`
-    qrUrls.forEach(url => {
+    qrBar.style.cssText = `display:flex;justify-content:center;gap:50px;padding-top:16px;flex-shrink:0`
+    qrList.forEach(c => {
+      const wrap = document.createElement('div')
+      wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px'
       const img = document.createElement('img')
-      img.src = url
+      img.src = c.url
       img.style.cssText = 'width:120px;height:120px;border-radius:8px;object-fit:cover;border:2px solid ' + theme.css['--border']
-      qrBar.appendChild(img)
+      wrap.appendChild(img)
+      if (c.name) {
+        const nameSpan = document.createElement('span')
+        nameSpan.style.cssText = `font-size:18px;color:${theme.css['--text-primary']}`
+        nameSpan.textContent = c.name
+        wrap.appendChild(nameSpan)
+      }
+      qrBar.appendChild(wrap)
     })
     content.appendChild(qrBar)
   }
@@ -587,7 +604,7 @@ function paginate() {
   const pages = []
   let curPage = []
   const qrContacts = data.value?.contacts || {}
-  const hasQr = qrContacts.wechat || qrContacts.whatsapp || qrContacts.telegram
+  const hasQr = qrContacts.wechat?.url || qrContacts.whatsapp?.url || qrContacts.telegram?.url
   const bgH = PAGE_H - PAGE_PAD * 2 - TITLE_H - (hasQr ? QR_H : 0)
   let curH = 0
   let lastCatId = null
@@ -668,6 +685,14 @@ function copyLink() {
   })
 }
 
+function downloadQrCode() {
+  if (!qrCanvas.value) return
+  const a = document.createElement('a')
+  a.download = '菜单二维码.png'
+  a.href = qrCanvas.value.toDataURL('image/png')
+  a.click()
+}
+
 // 分享二维码
 watch(showShare, async (val) => {
   if (val && qrContainer.value) {
@@ -679,6 +704,7 @@ watch(showShare, async (val) => {
       await QRCode.toCanvas(canvas, url, { width: 200, margin: 2 })
       qrContainer.value.innerHTML = ''
       qrContainer.value.appendChild(canvas)
+      qrCanvas.value = canvas
     } catch (e) {
       console.error('二维码生成失败', e)
     }
@@ -801,6 +827,17 @@ watch(() => getMenuData(), (menuData) => {
   border: 2px dashed var(--input-border); border-radius: 6px;
   font-size: 12px; color: var(--text-secondary); cursor: pointer;
 }
+.qr-col {
+  display: flex; flex-direction: column; align-items: center;
+}
+.form-input-sm {
+  width: 100%; padding: 4px 8px; font-size: 12px;
+  border-radius: 6px; border: 1px solid var(--input-border);
+  background: var(--input-bg); color: var(--text-primary);
+  outline: none; font-family: var(--body-font);
+}
+.form-input-sm:focus { border-color: var(--accent); }
+.form-input-sm::placeholder { color: var(--text-secondary); font-size: 11px; }
 
 /* 弹窗 */
 .share-qrcode { display: flex; justify-content: center; padding: 12px; }
