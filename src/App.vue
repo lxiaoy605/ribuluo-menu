@@ -1,7 +1,7 @@
 <template>
   <div class="app" :class="'theme-' + currentTheme">
     <!-- 登录页不显示顶栏 -->
-    <div class="app-header" v-if="!isLogin">
+    <div class="app-header" v-if="!isLogin && !isAdminOrders">
       <div class="header-left" v-if="!isAdmin">
         <button v-if="isCart" class="btn-back-header" @click="goMenu">← {{ t('back') }}</button>
         <button v-else class="btn-cart-header" @click="goCart">
@@ -92,6 +92,7 @@ const { itemCount } = useCart()
 const isLogin = computed(() => route.path === '/admin' || route.path === '/admin/')
 const isAdmin = computed(() => route.path.startsWith('/admin'))
 const isCart = computed(() => route.path === '/cart')
+const isAdminOrders = computed(() => route.path === '/admin/orders')
 
 const showThemeConfirm = ref(false)
 const pendingTheme = ref('')

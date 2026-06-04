@@ -74,7 +74,7 @@
             <span class="ocs-amount">֏ {{ (order.total_amount || 0).toLocaleString() }}</span>
             <span v-if="order.delivery_fee" class="ocs-fee">+ 配送费 ֏ {{ order.delivery_fee.toLocaleString() }}</span>
           </div>
-          <span class="ocs-expand">{{ expandedIds.has(order.id) ? '收起' : '展开' }}</span>
+          <button class="btn-expand">{{ expandedIds.has(order.id) ? '收起' : '展开' }}</button>
         </div>
 
         <!-- 展开详情（与用户端历史预订一致） -->
@@ -91,7 +91,7 @@
             <thead><tr><th>菜品</th><th>数量</th><th>单价</th><th>小计</th></tr></thead>
             <tbody>
               <tr v-for="(item, i) in (order.items || [])" :key="i">
-                <td>{{ item.name }}</td><td>{{ item.qty }}</td>
+                <td>{{ itemName(item.name) }}</td><td>{{ item.qty }}</td>
                 <td>֏ {{ (item.price || 0).toLocaleString() }}</td>
                 <td>֏ {{ ((item.price || 0) * (item.qty || 0)).toLocaleString() }}</td>
               </tr>
@@ -140,7 +140,7 @@
             <span class="ei-col-wide">菜品</span><span>数量</span><span>单价</span><span>小计</span><span></span>
           </div>
           <div v-for="(item, i) in editItems" :key="i" class="ei-row">
-            <span class="ei-col-wide">{{ item.name }}</span>
+            <span class="ei-col-wide">{{ itemName(item.name) }}</span>
             <span class="ei-col-qty">
               <button class="qbtn" @click="adjEditItem(i, -1)">−</button>
               <span class="qval">{{ item.qty }}</span>
@@ -574,6 +574,11 @@ async function renderChart() {
 
 // ========== 工具函数 ==========
 function fmtNum(n) { return (n || 0).toLocaleString() }
+function itemName(nameObj) {
+  if (!nameObj) return '-'
+  if (typeof nameObj === 'string') return nameObj
+  return nameObj.zh || nameObj['zh'] || Object.values(nameObj).find(v => v) || ''
+}
 function fmtTime(ts) {
   if (!ts) return '-'
   const d = new Date(ts)
@@ -585,7 +590,7 @@ function yandexGoUrl(address) {
 }
 
 function ggUrl(address) {
-  return 'ggtaxi://'
+  return 'intent://#Intent;package=am.ggtaxi.main;end'
 }
 
 function copyText(text) {
@@ -672,7 +677,19 @@ onUnmounted(() => {
 .ocs-time { font-size: 11px; color: var(--text-secondary); }
 .ocs-amount { font-size: 13px; font-weight: 600; color: var(--text-price); }
 .ocs-fee { font-size: 11px; color: var(--text-secondary); }
-.ocs-expand { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+.btn-expand {
+  font-size: 11px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: var(--body-font);
+  white-space: nowrap;
+}
+.btn-expand:active { background: var(--accent); color: var(--badge-text, #2B1600); }
 
 .oc-detail { padding: 0 10px 10px; border-top: 1px solid var(--border); background: var(--bg-primary); }
 .ocd-actions { display: flex; gap: 6px; padding: 8px 0; flex-wrap: wrap; }
