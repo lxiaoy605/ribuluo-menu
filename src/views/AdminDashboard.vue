@@ -78,6 +78,56 @@
       </div>
     </section>
 
+    <!-- Telegram 通知设置 -->
+    <section class="admin-section">
+      <h3 class="section-title">Telegram 通知设置</h3>
+      <p v-if="tgSaveMsg" class="qr-save-msg">{{ tgSaveMsg }}</p>
+
+      <div class="tg-config">
+        <div class="tg-field">
+          <label class="form-label">Bot Token</label>
+          <div class="tg-input-row">
+            <input :type="tgShowToken ? 'text' : 'password'" class="form-input" v-model="tgForm.botToken" placeholder="输入 Bot Token" />
+            <button class="btn btn-sm btn-outline" @click="tgShowToken = !tgShowToken">{{ tgShowToken ? '隐藏' : '显示' }}</button>
+          </div>
+        </div>
+
+        <div class="tg-field">
+          <label class="form-label">Chat ID</label>
+          <div class="tg-input-row">
+            <input class="form-input" v-model="tgForm.chatId" placeholder="输入 Chat ID" />
+            <button class="btn btn-sm btn-outline" @click="fetchChatId" :disabled="tgFetchingChat">
+              {{ tgFetchingChat ? '获取中...' : '获取 Chat ID' }}
+            </button>
+          </div>
+          <p class="tg-hint">将 Bot 拉入群组并发送消息后点击获取，支持群组 Chat ID</p>
+        </div>
+
+        <div class="tg-switches">
+          <label class="tg-switch">
+            <input type="checkbox" v-model="tgForm.enabled" />
+            <span>启用通知</span>
+          </label>
+          <label class="tg-switch">
+            <input type="checkbox" v-model="tgForm.notifyOnCustomerUpdate" />
+            <span>顾客修改通知</span>
+          </label>
+          <label class="tg-switch">
+            <input type="checkbox" v-model="tgForm.notifyOnStatusChange" />
+            <span>状态变更通知</span>
+          </label>
+        </div>
+
+        <div class="tg-actions">
+          <button class="btn btn-primary" @click="saveTgConfig">保存设置</button>
+          <button class="btn btn-outline" @click="testTgNotify" :disabled="tgTesting">
+            {{ tgTesting ? '测试中...' : '测试通知' }}
+          </button>
+        </div>
+        <p v-if="tgTestResult" class="tg-test-result" :class="{ 'tg-error': tgTestResult.includes('失败') }">{{ tgTestResult }}</p>
+      </div>
+    </section>
+
     <!-- 数据备份 -->
     <section class="admin-section">
       <h3 class="section-title">{{ t('dataBackup') }}</h3>
@@ -247,6 +297,7 @@ import { useTheme } from '../composables/useTheme'
 import { useCloudinary } from '../composables/useCloudinary'
 import { useOrders } from '../composables/useOrders'
 import { useAlertSound } from '../composables/useAlertSound'
+import { useTelegramNotify } from '../composables/useTelegramNotify'
 
 const router = useRouter()
 const { t, tName, langOptions } = useI18n()
@@ -261,6 +312,7 @@ const {
 } = useMenuData()
 const { getPendingCount } = useOrders()
 const { activate: activateSound, playAlert } = useAlertSound()
+const { testNotify } = useTelegramNotify()
 
 const authed = ref(false)
 const pendingBadge = ref(0)
@@ -272,6 +324,12 @@ const contacts = reactive({
 })
 const qrNames = reactive({ wechat: '', whatsapp: '', telegram: '' })
 const qrSaveMsg = ref('')
+const tgShowToken = ref(false)
+const tgForm = reactive({ botToken: '', chatId: '', enabled: false, notifyOnCustomerUpdate: true, notifyOnStatusChange: true })
+const tgSaveMsg = ref('')
+const tgTesting = ref(false)
+const tgTestResult = ref('')
+const tgFetchingChat = ref(false)
 const qrInputs = reactive({ wechat: null, whatsapp: null, telegram: null })
 const showCategoryEditor = ref(false)
 const showSubEditor = ref(false)
@@ -369,6 +427,79 @@ function refreshData() {
       qrNames[k] = (data.value.contacts[k] && data.value.contacts[k].name) || ''
     }
   }
+  loadTgConfig()
+}
+
+function loadTgConfig() {
+  const d = getMenuData()
+  if (!d) return
+  tgForm.botToken = d.telegramBotToken || ''
+  tgForm.chatId = d.telegramChatId || ''
+  tgForm.enabled = d.telegramNotificationsEnabled || false
+  tgForm.notifyOnCustomerUpdate = d.telegramNotifyOnCustomerUpdate !== false
+  tgForm.notifyOnStatusChange = d.telegramNotifyOnStatusChange !== false
+}
+
+async function saveTgConfig() {
+  const d = getMenuData()
+  if (!d) return
+  d.telegramBotToken = tgForm.botToken
+  d.telegramChatId = tgForm.chatId
+  d.telegramNotificationsEnabled = tgForm.enabled
+  d.telegramNotifyOnCustomerUpdate = tgForm.notifyOnCustomerUpdate
+  d.telegramNotifyOnStatusChange = tgForm.notifyOnStatusChange
+  await setMenuData(d)
+  tgSaveMsg.value = 'Telegram 设置已保存'
+  setTimeout(() => { tgSaveMsg.value = '' }, 3000)
+}
+
+async function testTgNotify() {
+  tgTesting.value = true
+  tgTestResult.value = ''
+  try {
+    const result = await testNotify()
+    tgTestResult.value = result.error ? `测试失败: ${result.error}` : '测试通知已发送，请查看 Telegram'
+  } catch (e) {
+    tgTestResult.value = `测试失败: ${e.message}`
+  }
+  tgTesting.value = false
+}
+
+async function fetchChatId() {
+  tgFetchingChat.value = true
+  tgTestResult.value = ''
+  try {
+    const resp = await fetch('/api/get-chat-id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    })
+    const data = await resp.json()
+    if (data.error) {
+      tgTestResult.value = data.error
+    } else if (data.chats) {
+      // 优先选群组
+      const group = data.chats.find(c => c.type === 'supergroup') || data.chats.find(c => c.type === 'group')
+      const selected = group || data.chats[0]
+      tgForm.chatId = String(selected.id)
+      const typeLabel = { private: '私聊', group: '群组', supergroup: '超级群组' }[selected.type] || selected.type
+      const nameSuffix = selected.title ? `（${selected.title}）` : ''
+      tgTestResult.value = `已获取 ${typeLabel} Chat ID: ${selected.id}${nameSuffix}`
+      if (data.chats.length > 1) tgTestResult.value += `（共${data.chats.length}个对话，优先选择群组）`
+      // 自动保存
+      const d = getMenuData()
+      if (d) { d.telegramChatId = String(selected.id); await setMenuData(d) }
+    } else if (data.latest) {
+      // 兼容旧格式
+      tgForm.chatId = String(data.latest)
+      tgTestResult.value = `已获取 Chat ID: ${data.latest}`
+      const d = getMenuData()
+      if (d) { d.telegramChatId = String(data.latest); await setMenuData(d) }
+    }
+  } catch (e) {
+    tgTestResult.value = `获取失败: ${e.message}`
+  }
+  tgFetchingChat.value = false
 }
 
 // 店名
@@ -890,6 +1021,7 @@ watch(() => getMenuData(), (menuData) => {
         qrNames[k] = (menuData.contacts[k] && menuData.contacts[k].name) || ''
       }
     }
+    loadTgConfig()
   }
 })
 </script>
@@ -1018,4 +1150,17 @@ watch(() => getMenuData(), (menuData) => {
 .share-qrcode { display: flex; justify-content: center; padding: 12px; }
 .share-qrcode canvas { border-radius: 8px; }
 .resolution-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Telegram 通知设置 */
+.tg-config { display: flex; flex-direction: column; gap: 12px; }
+.tg-field { display: flex; flex-direction: column; gap: 4px; }
+.tg-input-row { display: flex; gap: 8px; align-items: center; }
+.tg-input-row .form-input { flex: 1; }
+.tg-hint { font-size: 11px; color: var(--text-secondary); margin: 2px 0 0; }
+.tg-switches { display: flex; flex-direction: column; gap: 6px; }
+.tg-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+.tg-switch input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.tg-actions { display: flex; gap: 8px; }
+.tg-test-result { font-size: 12px; color: var(--success); margin: 0; }
+.tg-test-result.tg-error { color: var(--danger); }
 </style>

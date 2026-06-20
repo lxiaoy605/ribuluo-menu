@@ -74,6 +74,15 @@ export function useOrders() {
     if (error) throw error
   }
 
+  async function patchTelegramMessageId(orderId, messageId) {
+    try {
+      const { supabase } = useSupabase()
+      await supabase.from('orders').update({ telegram_message_id: messageId }).eq('id', orderId)
+    } catch (e) {
+      console.error('patchTelegramMessageId failed:', e)
+    }
+  }
+
   async function getOrdersByIds(ids) {
     if (!ids || !ids.length) return []
     const { data, error } = await supabase
@@ -234,5 +243,5 @@ export function useOrders() {
     return bins.map((amount, i) => ({ day: i + 1, amount }))
   }
 
-  return { submitOrder, updateOrderById, getOrders, getOrdersByIds, searchOrders, deleteOrder, genOrderId, getPendingCount, getOrderStats, getStatsByMonth, getStatsByDay }
+  return { submitOrder, updateOrderById, patchTelegramMessageId, getOrders, getOrdersByIds, searchOrders, deleteOrder, genOrderId, getPendingCount, getOrderStats, getStatsByMonth, getStatsByDay }
 }

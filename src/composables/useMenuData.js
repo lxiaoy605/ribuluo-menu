@@ -30,6 +30,16 @@ function setLocalData(data) {
 }
 
 // ========== 从 Supabase 加载 ==========
+// 剥离敏感字段（telegramBotToken），防止泄露到客户端缓存
+function sanitizeForClient(data) {
+  if (data && data.telegramBotToken) {
+    const sanitized = { ...data }
+    delete sanitized.telegramBotToken
+    return sanitized
+  }
+  return data
+}
+
 async function loadFromServer() {
   try {
     const { supabase } = useSupabase()
@@ -40,11 +50,12 @@ async function loadFromServer() {
       .single()
 
     if (data?.data) {
-      menuCache.value = data.data
-      setLocalData(data.data)
+      const safe = sanitizeForClient(data.data)
+      menuCache.value = safe
+      setLocalData(safe)
       serverLoaded = true
       loadedFromServer = true
-      return data.data
+      return safe
     }
   } catch (e) {
     console.error('从服务器加载菜单数据失败', e)
@@ -53,19 +64,36 @@ async function loadFromServer() {
   // 服务器无数据或加载失败 → 回退到本地缓存
   const cached = getLocalData()
   if (cached) {
-    menuCache.value = cached
+    const safe = sanitizeForClient(cached)
+    menuCache.value = safe
     serverLoaded = true
-    return cached
+    return safe
   }
   return null
 }
 
 // ========== 保存到 Supabase ==========
 async function saveToServer(data) {
-  menuCache.value = data
-  setLocalData(data)
+  const safe = sanitizeForClient(data)
+  menuCache.value = safe
+  setLocalData(safe)
   try {
     const { supabase } = useSupabase()
+
+    // 保护 telegramBotToken：客户端缓存已剥离 token，若本次未传入则从数据库回填
+    if (!data.telegramBotToken) {
+      try {
+        const { data: row } = await supabase
+          .from('menu_config')
+          .select('data->telegramBotToken')
+          .eq('id', 1)
+          .single()
+        if (row?.telegramBotToken) {
+          data.telegramBotToken = row.telegramBotToken
+        }
+      } catch (_) { /* 忽略 */ }
+    }
+
     const { error } = await supabase
       .from('menu_config')
       .upsert({ id: 1, data, updated_at: new Date().toISOString() })

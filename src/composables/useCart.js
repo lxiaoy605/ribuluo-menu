@@ -147,6 +147,11 @@ function loadOrder(orderData) {
     expectedTime: orderData.expected_time || ''
   }
   cart.editingOrderId = orderData.id
+  cart.telegramMessageId = orderData.telegram_message_id || null
+  // 保存原始菜品用于变更对比
+  cart.oldItems = (orderData.items || []).map(i => ({
+    id: i.id, name: i.name, price: i.price, qty: i.qty
+  }))
   _saveCart()
 }
 
@@ -186,6 +191,8 @@ export function useCart() {
     totalAmount: _totalAmount,
     cartItems: computed(() => _readCart().items),
     cartForm: computed(() => _readCart().form),
-    editingOrderId: _editingOrderId
+    editingOrderId: _editingOrderId,
+    telegramMessageId: computed(() => _cart.value?.telegramMessageId || null),
+    oldOrderItems: computed(() => _cart.value?.oldItems || [])
   }
 }

@@ -259,6 +259,7 @@ import { useI18n } from '../composables/useI18n'
 import { useOrders } from '../composables/useOrders'
 import { useMenuData } from '../composables/useMenuData'
 import { useAlertSound } from '../composables/useAlertSound'
+import { useTelegramNotify } from '../composables/useTelegramNotify'
 import { Chart, BarController, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js'
 
 Chart.register(BarController, CategoryScale, LinearScale, BarElement, Tooltip)
@@ -268,6 +269,7 @@ const { t } = useI18n()
 const { searchOrders, getOrderStats, getStatsByMonth, getStatsByDay, updateOrderById, deleteOrder, getPendingCount } = useOrders()
 const { getMenuData } = useMenuData()
 const { playAlert, activate } = useAlertSound()
+const { notifyStatusChange, notifyAdminUpdate } = useTelegramNotify()
 
 // 统计
 const stats = reactive({ todayPending: 0, todayCompleted: 0, todayAmount: 0, monthCount: 0, monthAmount: 0, yearCount: 0, yearAmount: 0 })
@@ -397,6 +399,15 @@ function confirmComplete(order) {
   confirmMsg.value = `确认完成结算订单 ${order.id}？完成后将进入"已完成"列表。`
   confirmAction = async () => {
     await updateOrderById(order.id, { ...order, status: 'completed', deliveryFee: order.delivery_fee || 0, orderMode: order.order_mode, deliveryAddress: order.delivery_address, guestCount: order.guest_count, customerName: order.customer_name, contactType: order.contact_type, contactInfo: order.contact_info, notes: order.notes, expectedTime: order.expected_time, items: order.items, totalAmount: order.total_amount })
+    notifyStatusChange({
+      id: order.id, items: order.items || [], guestCount: order.guest_count,
+      totalAmount: order.total_amount, customerName: order.customer_name,
+      contactType: order.contact_type, contactInfo: order.contact_info,
+      notes: order.notes, expectedTime: order.expected_time,
+      orderMode: order.order_mode, deliveryAddress: order.delivery_address,
+      deliveryFee: order.delivery_fee || 0, status: 'completed',
+      telegram_message_id: order.telegram_message_id
+    })
     showToast('结算完成')
     await loadStats(); await loadOrders(); await refreshCounts()
   }
@@ -406,6 +417,15 @@ function confirmUndo(order) {
   confirmMsg.value = `确认将订单 ${order.id} 变更为预订状态？`
   confirmAction = async () => {
     await updateOrderById(order.id, { ...order, status: 'pending', deliveryFee: order.delivery_fee || 0, orderMode: order.order_mode, deliveryAddress: order.delivery_address, guestCount: order.guest_count, customerName: order.customer_name, contactType: order.contact_type, contactInfo: order.contact_info, notes: order.notes, expectedTime: order.expected_time, items: order.items, totalAmount: order.total_amount })
+    notifyStatusChange({
+      id: order.id, items: order.items || [], guestCount: order.guest_count,
+      totalAmount: order.total_amount, customerName: order.customer_name,
+      contactType: order.contact_type, contactInfo: order.contact_info,
+      notes: order.notes, expectedTime: order.expected_time,
+      orderMode: order.order_mode, deliveryAddress: order.delivery_address,
+      deliveryFee: order.delivery_fee || 0, status: 'pending',
+      telegram_message_id: order.telegram_message_id
+    })
     showToast('已撤回')
     await loadStats(); await loadOrders(); await refreshCounts()
   }
@@ -490,6 +510,7 @@ async function saveEdit() {
   editSaving.value = true
   editError.value = ''
   try {
+    const newItems = editItems.value.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty }))
     await updateOrderById(editOrder.value.id, {
       status: editOrder.value.status,
       orderMode: editForm.orderMode,
@@ -501,8 +522,17 @@ async function saveEdit() {
       contactInfo: editForm.contactInfo,
       notes: editForm.notes,
       expectedTime: editForm.expectedTime,
-      items: editItems.value.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
+      items: newItems,
       totalAmount: editTotal.value
+    })
+    notifyAdminUpdate({
+      id: editOrder.value.id, items: newItems, guestCount: editForm.guestCount,
+      totalAmount: editTotal.value, customerName: editForm.customerName,
+      contactType: editForm.contactType, contactInfo: editForm.contactInfo,
+      notes: editForm.notes, expectedTime: editForm.expectedTime,
+      orderMode: editForm.orderMode, deliveryAddress: editForm.deliveryAddress,
+      deliveryFee: editForm.deliveryFee || 0, status: editOrder.value.status,
+      telegram_message_id: editOrder.value.telegram_message_id
     })
     showToast('订单已更新')
     editOrder.value = null

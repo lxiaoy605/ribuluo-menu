@@ -238,6 +238,11 @@ export const defaultMenu = {
   theme: 'bbq-red-gold',
   currentLang: 'zh',
   passwordHash: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', // admin123
+  telegramBotToken: '',
+  telegramChatId: '',
+  telegramNotificationsEnabled: false,
+  telegramNotifyOnCustomerUpdate: true,
+  telegramNotifyOnStatusChange: true,
   contacts: {
     wechat: { url: '', name: '' },
     whatsapp: { url: '', name: '' },

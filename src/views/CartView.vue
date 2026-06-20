@@ -280,11 +280,13 @@ import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useCart } from '../composables/useCart'
 import { useOrders } from '../composables/useOrders'
+import { useTelegramNotify } from '../composables/useTelegramNotify'
 
 const router = useRouter()
 const { t, tName } = useI18n()
-const { cartItems, totalAmount, cartForm, itemCount, editingOrderId, hasItems, clearCart, updateForm, loadOrder, addItem, removeItem, addOrderId, getOrderIds } = useCart()
-const { submitOrder, updateOrderById, getOrdersByIds, genOrderId } = useOrders()
+const { cartItems, totalAmount, cartForm, itemCount, editingOrderId, telegramMessageId, oldOrderItems, hasItems, clearCart, updateForm, loadOrder, addItem, removeItem, addOrderId, getOrderIds } = useCart()
+const { submitOrder, updateOrderById, patchTelegramMessageId, getOrdersByIds, genOrderId } = useOrders()
+const { notifyNewOrder, notifyCustomerUpdate } = useTelegramNotify()
 
 const activeTab = ref('current')
 const submitError = ref('')
@@ -371,10 +373,13 @@ async function handleSubmit() {
 
     if (editingOrderId.value) {
       // 修改模式：更新已有订单
+      const oldItems = oldOrderItems.value
+      const msgId = telegramMessageId.value
       await updateOrderById(editingOrderId.value, orderData)
       submittedOrderId.value = editingOrderId.value
-      clearCart()
       showSuccessModal.value = true
+      notifyCustomerUpdate({ ...orderData, id: editingOrderId.value, telegram_message_id: msgId, oldItems })
+      clearCart()
     } else {
       // 新建模式
       orderData.id = genOrderId()
@@ -383,6 +388,7 @@ async function handleSubmit() {
       addOrderId(result.id)
       clearCart()
       showSuccessModal.value = true
+      notifyNewOrder(orderData).then(msgId => { if (msgId) patchTelegramMessageId(result.id, msgId) })
     }
   } catch (e) {
     submitError.value = '提交失败，请重试'
@@ -432,7 +438,8 @@ function handleModify(order) {
     contact_type: order.contact_type,
     contact_info: order.contact_info,
     notes: order.notes,
-    expected_time: order.expected_time
+    expected_time: order.expected_time,
+    telegram_message_id: order.telegram_message_id
   })
   activeTab.value = 'current'
 }

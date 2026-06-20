@@ -194,11 +194,61 @@ ribuluoMenu/
 
 ## 待完成
 
-1. ❗ 用户在 Supabase SQL Editor 执行 `supabase/orders_v2_migration.sql`
+1. ~~Telegram 通知调试完成~~ (2026-06-20)
 2. Vercel 部署
 3. 全流程测试（加购→提交→管理端查单→编辑→结算→撤回→统计）
 4. 三方配送App深链接实测(YandexGo/GG)
 5. 微信/WhatsApp/Telegram联系类型统计扩展
+
+## Telegram 订单通知 (2026-06-20 新增)
+
+### 架构
+```
+顾客下单 → useOrders.submitOrder() → Supabase INSERT
+              ↓
+CartView 调用 POST /api/notify (fire-and-forget)
+              ↓
+Vercel Serverless Function (api/notify.js)
+  1. 从 Supabase menu_config 读取 Bot Token + Chat ID (服务端)
+  2. 检查通知开关
+  3. 根据 action 类型调用 Telegram Bot API
+```
+
+### 通知动作
+| action | 触发场景 | Telegram 操作 | 铃声 |
+|--------|---------|-------------|------|
+| `new` | 顾客新订单 | sendMessage（完整详情） | ✅ |
+| `customer_update` | 顾客修改订单 | editMessageText + sendMessage reply | ✅ |
+| `admin_update` | 管理端编辑 | editMessageText only | ❌ |
+| `status_change` | 结算/撤回 | editMessageText + sendMessage reply | ✅ |
+
+### 关键安全设计
+- Bot Token 存储在 Supabase `menu_config`，客户端 `useMenuData.sanitizeForClient()` 剥离
+- `/api/notify` 和 `/api/get-chat-id` 在服务器端读取 Token，永远不会暴露给浏览器
+- `saveToServer()` 保护机制：若传入数据无 `telegramBotToken`，从数据库回填再保存，防止被 null 覆盖
+
+### 调试修复 (2026-06-20)
+- **变更摘要不显示**：`fmtChangeSummary` 中 `+`/`-` 符号未 MarkdownV2 转义，导致 Telegram API 拒绝。改为中文 `加菜`/`减菜`，一劳永逸避免转义问题
+- **获取 Chat ID 漏掉超级群组**：`get-chat-id.js` 只读 `message`/`channel_post` 事件，漏掉了 `my_chat_member`（Bot 入群/设为管理员）事件。超级群组升级后的新 ID 正好在 `my_chat_member` 事件里。修复后兼容所有事件类型
+- **群组优先级**：调整为 `supergroup` > `group` > `private`，群组升级为超级群组后自动选新 ID
+- **telegram_message_id 绑定**：验证 `patchTelegramMessageId` 正确保存到 orders 表，修改订单时 editMessageText 正常工作
+
+### 涉及文件
+| 操作 | 文件 |
+|------|------|
+| 新建 | `api/notify.js` — 核心通知逻辑 |
+| 新建 | `api/get-chat-id.js` — 获取 Chat ID 辅助 |
+| 新建 | `api/hello.js` — 健康检查 |
+| 新建 | `src/composables/useTelegramNotify.js` — 客户端封装 |
+| 新建 | `supabase/migrations/telegram_notify.sql` — DB 迁移 |
+| 修改 | `vercel.json` — API 路由豁免 |
+| 修改 | `src/views/CartView.vue` — 提交/修改后调用通知 |
+| 修改 | `src/views/AdminOrders.vue` — 结算/撤回/编辑后调用通知 |
+| 修改 | `src/views/AdminDashboard.vue` — Telegram 配置 UI |
+| 修改 | `src/data/defaultMenu.js` — 新增 telegram 字段 |
+| 修改 | `src/composables/useMenuData.js` — sanitizeForClient 剥离 Token |
+| 修改 | `src/composables/useOrders.js` — patchTelegramMessageId |
+| 修改 | `src/composables/useCart.js` — 存储/导出 telegramMessageId |
 
 ## 完整提交历史 (41 commits)
 
