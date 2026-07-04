@@ -80,13 +80,12 @@ import { useI18n } from './composables/useI18n'
 import { useTheme } from './composables/useTheme'
 import { useMenuData } from './composables/useMenuData'
 import { useCart } from './composables/useCart'
-import { defaultMenu } from './data/defaultMenu'
 
 const route = useRoute()
 const router = useRouter()
 const { t, tName, currentLang, setLang, initLang, langOptions } = useI18n()
 const { currentTheme, applyTheme, initTheme, themeOptions } = useTheme()
-const { getMenuData, initDefaultData, verifyPassword, hashPassword, setMenuData } = useMenuData()
+const { getMenuData, refresh, verifyPassword, hashPassword, setMenuData } = useMenuData()
 const { itemCount } = useCart()
 
 const isLogin = computed(() => route.path === '/admin' || route.path === '/admin/')
@@ -177,7 +176,7 @@ async function doResetPassword() {
 
 onMounted(async () => {
   initTheme() // 立即从 localStorage 应用主题，避免闪烁
-  await initDefaultData(defaultMenu)
+  await refresh()
   initTheme() // 用服务器数据更新
   initLang()
 })

@@ -9,6 +9,8 @@ const menuCache = ref(null)
 let serverLoaded = false
 // 数据是否确实来自 Supabase（非 localStorage 回退）
 let loadedFromServer = false
+// Supabase 是否成功响应（区分"服务器空"和"服务器不可达"）
+let serverResponded = false
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
@@ -49,6 +51,8 @@ async function loadFromServer() {
       .eq('id', 1)
       .single()
 
+    serverResponded = true  // Supabase 成功响应（无论有无数据）
+
     if (data?.data) {
       const safe = sanitizeForClient(data.data)
       menuCache.value = safe
@@ -57,11 +61,14 @@ async function loadFromServer() {
       loadedFromServer = true
       return safe
     }
+    // 服务器响应了但无数据 → serverResponded=true, loadedFromServer=false
+    // 这才是真正的"首次部署，服务器为空"
   } catch (e) {
     console.error('从服务器加载菜单数据失败', e)
+    // serverResponded 保持 false → 服务器不可达，绝不写入
   }
 
-  // 服务器无数据或加载失败 → 回退到本地缓存
+  // 回退到本地缓存（只读，不回写服务器）
   const cached = getLocalData()
   if (cached) {
     const safe = sanitizeForClient(cached)
@@ -109,59 +116,6 @@ async function saveToServer(data) {
 // ========== 获取数据（同步，从缓存读） ==========
 function getMenuData() {
   return menuCache.value
-}
-
-// ========== 初始化 ==========
-async function initDefaultData(defaultData) {
-  // 先尝试从服务器加载
-  let existing = await loadFromServer()
-
-  if (!existing) {
-    // 完全无数据，写入默认数据
-    await saveToServer(defaultData)
-    return defaultData
-  }
-
-  // 检测并迁移旧格式
-  let migrated = false
-  const isOldFormat = existing.groups || existing.products ||
-    (!existing.categories || (existing.categories.length > 0 && !existing.categories[0].children))
-
-  if (isOldFormat) {
-    if (defaultData.categories && defaultData.categories.length > 0) {
-      existing.categories = JSON.parse(JSON.stringify(defaultData.categories))
-      existing.theme = 'bbq-red-gold'
-      migrated = true
-    }
-  }
-
-  if (existing.groups) { delete existing.groups; migrated = true }
-  if (existing.products) { delete existing.products; migrated = true }
-
-  if (!existing.contacts) {
-    existing.contacts = { wechat: { url: '', name: '' }, whatsapp: { url: '', name: '' }, telegram: { url: '', name: '' } }
-    migrated = true
-  }
-  // 迁移旧 contacts 格式（string → {url, name}）
-  for (const k of ['wechat', 'whatsapp', 'telegram']) {
-    if (typeof existing.contacts[k] === 'string') {
-      existing.contacts[k] = { url: existing.contacts[k], name: '' }
-      migrated = true
-    }
-  }
-  if (!existing.passwordHash) {
-    existing.passwordHash = defaultData.passwordHash
-    migrated = true
-  }
-
-  if (migrated) {
-    await saveToServer(existing)
-  } else if (!loadedFromServer) {
-    // 数据来自本地缓存，服务器为空 → 推送到服务器完成初始化
-    await saveToServer(existing)
-  }
-
-  return existing
 }
 
 // ========== 密码 ==========
@@ -347,7 +301,6 @@ export function useMenuData() {
   return {
     getMenuData,
     setMenuData: saveToServer,
-    initDefaultData,
     verifyPassword,
     hashPassword,
     addCategory,
@@ -362,6 +315,8 @@ export function useMenuData() {
     exportJSON,
     importJSON,
     getProductCount,
-    refresh
+    refresh,
+    isServerConnected: () => serverResponded,
+    isDataFromServer: () => loadedFromServer
   }
 }

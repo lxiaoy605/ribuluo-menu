@@ -192,13 +192,31 @@ ribuluoMenu/
 6. **海报双常量**：PAGE_PAD(80) vs PAGE_PAD_BBQ(220)，红金主题背景图自带装饰边框
 7. **Web Audio API提示音**：无需音频文件，方波合成，需用户交互解锁AudioContext
 
+## Bug 修复：菜单价格被顾客浏览器覆盖 (2026-07-04)
+
+### 根因
+`initDefaultData()` 在每次页面加载时执行（App.vue onMounted），当 Supabase 冷启动/网络超时时，用顾客 localStorage 旧数据覆盖数据库。
+
+### 修复
+- 删除 `initDefaultData()` 整个函数（首次初始化 + 旧格式迁移逻辑均为历史遗留）
+- App.vue 改为只调用 `refresh()`（纯只读加载）
+- 菜单数据写入权只属于管理员 CRUD 操作，顾客端永远不覆盖数据库
+- 新部署的初始化通过 SQL 脚本完成，不依赖代码逻辑
+
+### 涉及文件
+| 文件 | 改动 |
+|------|------|
+| `src/composables/useMenuData.js` | 删除 initDefaultData，loadFromServer 改为纯只读 |
+| `src/App.vue` | 删除 defaultMenu 导入，onMounted 改用 refresh() |
+
 ## 待完成
 
 1. ~~Telegram 通知调试完成~~ (2026-06-20)
-2. Vercel 部署
-3. 全流程测试（加购→提交→管理端查单→编辑→结算→撤回→统计）
-4. 三方配送App深链接实测(YandexGo/GG)
-5. 微信/WhatsApp/Telegram联系类型统计扩展
+2. ~~菜单价格覆盖 Bug 修复~~ (2026-07-04)
+3. Vercel 部署
+4. 全流程测试（加购→提交→管理端查单→编辑→结算→撤回→统计）
+5. 三方配送App深链接实测(YandexGo/GG)
+6. 微信/WhatsApp/Telegram联系类型统计扩展
 
 ## Telegram 订单通知 (2026-06-20 新增)
 
