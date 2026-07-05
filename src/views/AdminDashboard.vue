@@ -703,6 +703,7 @@ function buildPage(pageIdx, pageData, lang) {
   bg.src = theme.bgImage
   bg.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:cover`
   page.appendChild(bg)
+  page._bgReady = bg.complete ? Promise.resolve() : new Promise(r => { bg.onload = r; bg.onerror = r })
 
   const content = document.createElement('div')
   content.style.cssText = `position:relative;z-index:1;padding:${pad}px;height:100%;display:flex;flex-direction:column`
@@ -918,6 +919,7 @@ async function exportPNGs(pages, lang) {
   for (let i = 0; i < pages.length; i++) {
     const pageEl = buildPage(i, pages[i], lang)
     document.body.appendChild(pageEl)
+    await pageEl._bgReady
     await nextTick()
     const canvas = await html2canvas(pageEl, { scale, useCORS: true, allowTaint: true, backgroundColor: null })
     document.body.removeChild(pageEl)
